@@ -1,0 +1,400 @@
+﻿<html>
+<!--UPUTE ZA KORIŠTENJE:
+    Prije prvog korištenja treba prilagoditi varijable u dijelu "varijable koje se prilagođavaju postaji".
+    Većinu varijabli treba prepisati iz ditalnog dnevnika motrenja (Pomoć -> Podaci o postaji), a one koje se ne nalaze u digitalnom dnevniku motritelj upisuje vezano uz tip uređaja i mjerne jedinice koje se koriste u radu.
+    Nakon što se unesu sve potrebne varijable, ovu datoteku treba spremiti pod imenom "synop_kalkulator_2.7.4.html" (bez navodnika).
+    Ostatak koda NE MJENJATI!
+    Program radi u interent pregledniku. Preporuka je na uređaju na kojem će se koristiti program uvjek imati najnoviju verziju internet preglednika.
+
+    O PROGRAMU:
+    Verzija 2.8.0 računa temperaturu rostišta, stvarni tlak vodene pare, relativnu vlagu zraka te svodi tlak na 0°C i na srednju morsku razinu (u planu je dodavanje mogućnosti da umjesto svođenja na SMR program računa visinu izobarne plohe).
+    Aplikacija također izračunava synop kodove te šifrira prvi odjeljak synop izvještaja, temperaturu mora u drugom odjeljku te 1., 2., 3. ,4., 6. i 7. grupu trećeg odjeljka, grupe za insolaciju, grupe oblačnih slojeva, specijalnu grupu za novi snijeg te specijalne grupe za brzinu i smijer udara vjetra većeg ili jednakog 17 m/s i specijlne grupe za stanje mora te u izvještaj uključuje i ostale specijalne grupe te odjeljak 4 koje motritelj sam unosi.
+
+    ŠTO JE NOVO (cijelu povijest verzija pogledati na dnu koda):
+    Dodani padajući meni-i za pomoć pri štifriranju grupe za pojave.
+
+    IZJAVA O ODRICANJU OD ODGOVORNOSTI:
+    Ovaj program je napisan kao pomoćno sredstvo za dobivanje izračunatih vrijednosti i synop izvještaja u slučaju kvara računalne opreme ili nestanka struje na meteorološkoj postaji.
+    Program trebaju koristiti školovani motritelji koji znaju kako kako trebaju izgledati dobiveni podaci i synop izvještaj kako bi mogli ispraviti dobiveni podatak u slučaju greške u programu.
+    Tvorac programa ne preuzima odgovornost za eventualnu štetu nastalu korištenjem ovog programa.
+    
+    KONTAKT:
+    Pitanja, prijedlozi, kritike, uočeni problemi i sve ostalo vezano uz rad programa se može slati na e-mail adresu: stefan.muza@cirus.dhz.hr-->
+  <head>
+    <script src="varijable.js"></script>
+    <script src="core.js"></script>
+    <meta charset="UTF-8" />
+    <title>SYNOP kalkulator</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body onload="load ()">
+    <table>
+      <tr>
+        <td colspan="18" class="vrh"><b><p id="timedate"></p></b></td>
+      </tr>
+      <tr>
+        <td colspan="18" class="vrh"><b>TERMINSKE VRIJEDNOST</b></td>
+      </tr>
+      <tr class="centar">
+        <td class="unos"><abbr title="Vidljivost u kilometrima.">km</abbr></td>
+        <td class="izracun">VV</td>
+        <td class="unos"><abbr title="Ukupna naoblaka.">NN</abbr></td>
+        <td class="unos"><abbr title="Količina visokih oblaka.">NN<sub>H</sub></abbr></td>
+        <td class="unos"><abbr title="Šifra visokih oblaka [0-9 ili /].">C<sub>H</sub></abbr></td>
+        <td class="unos"><abbr title="Količina srednjih oblaka.">NN<sub>M</sub></abbr></td>
+        <td class="unos"><abbr title="Šifra srednjih oblaka [0-9 ili /].">C<sub>M</sub></abbr></td>
+        <td class="unos"><abbr title="Visina srednjih oblaka u kilometrima.">km<sub>M</sub></abbr></td>
+        <td class="izracun">h<sub>M</sub></td>
+        <td class="unos"><abbr title="Količina niskih oblaka.">NN<sub>L</sub></abbr></td>
+        <td class="unos"><abbr title="Šifra niskih oblaka [0-9 ili /].">C<sub>L</sub></abbr></td>
+        <td class="unos"><abbr title="Visina niskih oblaka u kilometrima.">km<sub>L</sub></abbr></td>
+        <td class="izracun">h<sub>L</sub></td>
+        <td class="unos"><abbr title="Izmjereni smjer vjetra [00-36].">dd</abbr></td>
+        <td class="unos"><abbr title="Izmjerena brzina vjetra.">ff</abbr></td>
+        <td class="sporedno"><abbr title="Opažani smjer vjetra [00-32]. (Nije potrebno unositi ako se zna dd.)">DD</abbr></td>
+        <td class="sporedno"><abbr title="Jačina vjetra u Bf. (Nije potrebno unositi ako se zna ff.)">FF</abbr></td>
+        <td id="more"><div id="more3"><abbr title="Temperatura mora.">T<sub>w</sub></abbr></div></td>
+      </tr>
+      <tr class="centar">
+        <td class="unos"><input class="unosbr" type="text" size="5" id="km" onblur="vidljivost ()"></td>
+        <td class="izracun"><p id="VVizr"></p></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="nn" onblur="naoblaka ()"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="nnh"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="ch" onblur="visokiobl ()"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="nnm" onblur="srednjiosmine ()"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="cm" onblur="srednjiobl ()"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="kmm" onblur="srednjioblvis ()"></td>
+        <td class="izracun"><p id="hmizr"></p></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="nnl" onblur="niskiosmine ()"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="cl" onblur="niskiobl ()"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="kml" onblur="niskioblvis ()"></td>
+        <td class="izracun"><p id="hlizr"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="dd" onblur="vjetarmerprov ()"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="ff" onblur="vjetarbrzprov ()"></td>
+        <td class="sporedno"><input class="sporednobr" type="text" size="5" id="DD" onblur="vjetarsmjer ();vjetaropprov ();"></td>
+        <td class="sporedno"><input class="sporednobr" type="text" size="5" id="FF" onblur="vjetarbrzina ();vjetarjacprov ();"></td>
+        <td id="more2"><div id="more4"><input class="unosbr" type="text" size="5" id="tw"></div></td>
+      </tr>
+      <tr class="centar">
+        <td class="unos"><abbr title="Stanje tla [0-9].">E</abbr></td>
+        <td class="unos"><abbr title="Stanje tla sa snježnim pokrivačem [0-9].">E'</abbr></td>
+        <td class="izracun">E<sub>x</sub></td>
+        <td class="unos"><abbr title="Temperatura zraka.">T</abbr></td>
+        <td class="unos"><abbr title="Temperatura zraka po mokrom termometru (T') ili relativna vlaga zraka (U). (Ako je mokra temperatura negativna ne upisivati predznak, već upisati V ili L za vodu ili led na krpici.)"><p id = "utdxx"></p></abbr></td>
+        <td class="izracun" id="tddx1"><div id="tdddiv">T<sub>d</sub></div></td>
+        <td class="izracun" id="vpdx1"><div id="vpddiv">e</div></td>
+        <td class="izracun" id="uuux1"><div id="uuudiv">U</div></td>
+        <td class="unos"><abbr title="Temperatura na barometru.">T<sub>b</abbr></sub></td>
+        <td class="unos"><abbr title="Očitanje barometra u navedenim jedinicama.">b <sub>(<p style="display:inline" id="mjed"></p>)</sub></abbr></td>
+        <td class="izracun">P<sub>0</sub></td>
+        <td class="izracun"><p id="bxxx"></p></td>
+        <td class="unos"><abbr title="Tlak na razni postaje prije 3 sata [hPa]. Ako postaja u to vrijeme nije radila ili iz bilo kojeg drugog razloga nema podatka o tlaku, ostaviti ovo polje prazno.">P<sub>0 (-3h)</sub></abbr></td>
+        <td colspan="2" class="unos"><abbr title="Tendencija tlaka zraka na razini postaje tijekom prethodnih 3 sata [0-8]."><b>5appp</b></abbr></td>
+        <td colspan="2" class="unos"><abbr title="UTC 00, 06, 12, 18 - W1W2 za prethodnih 6 sati; UTC 03, 09, 15, 21 - W1W2 za prethodna 3 sata; svaki ostali termin - W1W2 za predhodni sat"><b>7wwW<sub>1</sub>W<sub>2</sub></b></abbr></td>
+        <td class="unos"><abbr title="UTC vrijeme izvještaja (ako nije vrijeme punog sata)."><b>9GGgg</b></abbr></td>
+      </tr>
+      <tr class="centar">
+        <td class="unos"><input class="unosbr" type="text" size="5" id="es" onblur="tlo ()"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="em" onblur="tlo ()"></td>
+        <td class="izracun"><p id="ex"></p></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="suhatemp"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="mokratemp" onblur="vlagaprov ()"></td>
+        <td class="izracun" id="tddx"><p id="tdd"></p></td>
+        <td class="izracun" id="vpdx"><p id="vpd"></p></td>
+        <td class="izracun" id="uuux"><p id="uuu"></p></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="barotemp"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="baroočitanje" onblur="vlagatlak ()"></td>
+        <td class="izracun"><p id="P0P0P0P0"></p></td>
+        <td class="izracun"><p id="PPPP"></p></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="tlakp" onblur="tlakprom ()"></td>
+        <td colspan="2" class="unos"><b>5</b><input class="unosbr" type="text" size="1" id="appp" onclick="tlakprom ()" onblur="approvjera ()"><b><p id="prom" style="display:inline">ppp</p></b></td>
+        <td colspan="2"class="unos"><div id="poj1"><b>7</b><input class="unosbr" type="text" size="5" id="wwW1W2"></div><div id="poj2"><b><p id="pojpad"></p></b></div></td>
+        <td class="unos"><b>9</b><input class="unosbr" size="3" id="GGgg">
+      </tr>
+      <tr>
+        <td colspan="9" class="vrh"><b>SPECIJALNE VRIJEDNOSTI</b></td>
+        <td colspan="9" class="vrh"><b>DNEVNE VRIJEDNOSTI</b></td>
+      </tr>
+      <tr>
+        <td colspan="9">
+          <p id="suncedan" class="input"><abbr title="Insolacija 24 sata [0.1h]">SS<sub>24h</sub></abbr> = <input class="unosbr" type="text" size="5" id="ss24"> | </p><p style="display:inline"><abbr title="Insolacija tijekom 1 sat [0.1h]">SS<sub>1h</sub></abbr> = <input class="unosbr" type="text" size="5" id="ss1"></p>
+          <hr>
+          <abbr title="Unosi se kada treba razmjeniti podatke oborine u vremenskim razdobljima od tri sata ili drugim razdobljima, koja se traže za regionalnu razmjenu.">RRR</abbr> = <input class="unosbr" type="text" size="5" id="RRR3"> <select name="vrijeme" id="tR3" class="dropdown">
+            <option value="/">Vremensko razdoblje</option>
+            <option value="5">1 sat</option>
+            <option value="6">2 sata</option>
+            <option value="7">3 sata</option>
+            <option value="1">6 sati</option>
+            <option value="8">9 sata</option>
+            <option value="2">12 sati</option>
+            <option value="9">15 sata</option>
+            <option value="3">18 sati</option>
+            <option value="4">24 sata</option>
+            <option value="0">Drugo razdoblje</option>
+          </select><hr>
+          <abbr title="Oblačni slojevi | Ns - ključ 2700 | C - ključ 0500 | hshs - ključ 1677"><b>8N<sub>s</sub>Ch<sub>s</sub>h<sub>s</sub></b></abbr> | <b>8</b><input class="unosbrleft" type="text" size="4" id="nschshs1"> <b>8</b><input class="unosbrleft" type="text" size="4" id="nschshs2"> <b>8</b><input class="unosbrleft" type="text" size="4" id="nschshs3"> <b>8</b><input class="unosbrleft" type="text" size="4" id="nschshs4">
+          <hr>
+          UDAR VJETRA (ff<sub>x</sub> &ge; 17 m/s): <abbr title="Maksimalni udar vjetra za razdoblje W1W2 (jednak ili veći 17 m/s). Upisuju se cijeli m/s.">ff<sub>x</sub></abbr> = <input class="unosbr" type="text" size="5" id="ffxx"> <abbr title="Smijer za maksimalni udar vjetra jednak ili veći 17 m/s - za razdoblje W1W2.">dd<sub>x</sub></abbr> = <input class="unosbr" type="text" size="5" id="ddxx" onblur="udar_vj_provjera ()">
+          <hr>
+          <div id="more5">STANJE MORA<br>
+          <select name="more_bazen" id="morestanje1" class="dropdown">
+            <option value="/">U bazenu</option>
+            <option value="0">0 - Zrcalno (0m)</option>
+            <option value="1">1 - Naborano (0m-0.1m)</option>
+            <option value="2">2 - Valićasto (0.1m-0.5m)</option>
+            <option value="3">3 - Valovito (0.5m-1.25m)</option>
+            <option value="4">4 - Uzburkano (1.25m-2.5m)</option>
+            <option value="5">5 - Grubo (2.5m-4m)</option>
+            <option value="6">6 - Olujno(4m-6m)</option>
+            <option value="7">7 - Velo (6m-9m)</option>
+            <option value="8">8 - Teško (9m-14m)</option>
+            <option value="9">9 - Iznimno teško (>14m)</option>
+          </select>
+          <select name="more_otvoreno" id="morestanje2" class="dropdown">
+            <option value="/">Na otvorenom</option>
+            <option value="0">0 - Zrcalno (0m)</option>
+            <option value="1">1 - Naborano (0m-0.1m)</option>
+            <option value="2">2 - Valićasto (0.1m-0.5m)</option>
+            <option value="3">3 - Valovito (0.5m-1.25m)</option>
+            <option value="4">4 - Uzburkano (1.25m-2.5m)</option>
+            <option value="5">5 - Grubo (2.5m-4m)</option>
+            <option value="6">6 - Olujno(4m-6m)</option>
+            <option value="7">7 - Velo (6m-9m)</option>
+            <option value="8">8 - Teško (9m-14m)</option>
+            <option value="9">9 - Iznimno teško (>14m)</option>
+          </select>
+          <abbr title="Vidljivost prema moru s obalne postaje [km] | ključ 4300"><b>V<sub>s</sub></b></abbr> = <input class="unosbr" type="text" size="5" id="vs">
+          <hr></div>
+          <abbr title="Ostale specijalne grupe. Unosi se potreban broj puta u grupama po 5 znamenki, a grupe se međusobno razdvajaju razmakom."><b>S<sub>p</sub>S<sub>p</sub>S<sub>p</sub>S<sub>p</sub>S<sub>p</sub></b></abbr> | <input class="unosbrleft" type="text" size="40" id="spspspsp"><hr>
+          <abbr title="Oblaci ispod razine postaje (grupe se upisuju ručno) | N' - ključ 2700 | C' - ključ 0500 | H'H' - stotine metara | Ct - ključ 0552"><b>N'C'H'H'C<sub>t</sub></b></abbr> | <input class="unosbrleft" type="text" size="20" id="nchhct">
+        </td>
+        <td colspan ="9">
+          <div id="max"><abbr title="Maksimalna temperatura zraka (06 UTC - 18 UTC).">T<sub>X</sub></abbr> = <input class="unosbr" type="text" size="5" id="tx"><hr></div>
+          <div id="min"><abbr title="Minimalna temperatura zraka (18 UTC - 06 UTC).">T<sub>N</sub></abbr> = <input class="unosbr" type="text" size="5" id="tn"> <abbr title="Minimalna temperatura na 5cm iznad tla.">T<sub>n5</sub></abbr> = <input class="unosbr" type="text" size="5" id="tn5"><hr></div>
+          <div id="oborina"><abbr title="Količina oborine za navedeno razdoblje.">R<sub><p id="Re" style="display:inline"></sub></p></abbr> = <input class="unosbr" type="text" size="5" id="R"></p><hr></div>
+          <div id="r24"><abbr title="Količina oborine tijekom prethodnih 24 sata.">R<sub>24</sub></abbr> = <input class="unosbr" type="text" size="5" id="R24"><hr></div>
+          <div id="sss">SNIJEG: <abbr title="Visina snijega.">UKUPNI</abbr> = <input class="unosbr" type="text" size="5" id="sssss"> <abbr title="Visina novonapadalog snijega u navedenom razdoblju.">NOVI<sub><p id="ReSw" style="display:inline"></sub></p></abbr> = <input class="unosbr" type="text" size="5" id="ssnov" onblur="snijegnew_test ()"><hr></div>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="18">
+          <select name="pojave" id="pojave_ww" class="dropdown" onchange="pojavemenu ()">
+            <option value="//">* * Trenutno vrijeme * *</option>
+            <option value="//">* * 00 - 09* *</option>
+            <option value="00">00 - Razvoj oblaka nije opažan ili se nije mogao opažati</option>
+            <option value="01">01 - Oblaci se općenito rasplinjuju ili postaju slabije razvijeni</option>
+            <option value="02">02 - Stanje neba u cjelini je nepromjenjeno</option>
+            <option value="03">03 - Oblaci se općenito stvaraju ili razvijaju</option>
+            <option value="04">04 - Vidljivost smanjena dimom</option>
+            <option value="05">05 - Suha mutnoća</option>
+            <option value="06">06 - Raširena prašina lebdi u zraku - ne dignuta vjetrom</option>
+            <option value="07">07 - Prašina ili pijesak bez vrtloga ili oluje</option>
+            <option value="08">08 - Prašinski ili pješčani vrtlog (vrtlozi)</option>
+            <option value="09">09 - Prašinska ili pješčana oluja</option>
+            <option value="//">* * 10 - 19 * *</option>
+            <option value="10">10 - Sumaglica</option>
+            <option value="11">11 - Niska ili ledena magla na postaji (krpe)</option>
+            <option value="12">12 - Niska ili ledena magla na postaji (sloj)</option>
+            <option value="13">13 - Sijevanje</option>
+            <option value="14">14 - Virga</option>
+            <option value="15">15 - Oborina u vidokrugu van kruga od 5 km</option>
+            <option value="16">16 - Oborina u vidokrugu u krugu od 5 km (ne na postaji)</option>
+            <option value="17">17 - Grmljavina (nema oborine u vidokrugu)</option>
+            <option value="18">18 - Oluja u vidokrugu postaje</option>
+            <option value="19">19 - Tornado ili pijavica u vidokrugu postaje</option>
+            <option value="//">* * 20 - 29 * *</option>
+            <option value="20">20 - Rosulja (ne smrzava se) ili zrnat snijeg tijekom prethodnog sata</option>
+            <option value="21">21 - Kiša (ne smrzava se) koja ne pada kao pljuskovi tijekom prethodnog sata</option>
+            <option value="22">22 - Snijeg tijekom prethodnog sata</option>
+            <option value="23">23 - Susnježica tijekom prethodnog sata</option>
+            <option value="24">24 - Prehladna rosulja ili prehladna kiša tijekom prethodnog sata</option>
+            <option value="25">25 - Pljusak kiše tijekom prethodnog sata</option>
+            <option value="26">26 - Pljusak snijega ili susnježice tijekom prethodnog sata</option>
+            <option value="27">27 - Pljusak tuče ili pljusak kiše i tuče tijekom prethodnog sata</option>
+            <option value="28">28 - Magla ili ledena magla tijekom prethodnog sata</option>
+            <option value="29">29 - Grmljavina (sa ili bez oborine) tijekom prethodnog sata</option>
+            <option value="//">* * 30 - 39 * *</option>
+            <option value="30">30 - Slaba ili umjerena prašinska ili pješčana oluja - oslabila</option>
+            <option value="31">31 - Slaba ili umjerena prašinska ili pješčana oluja - bez promjene</option>
+            <option value="32">32 - Slaba ili umjerena prašinska ili pješčana oluja - započela ili jača</option>
+            <option value="33">33 - Žestoka prašinska ili pješčana oluja - oslabila</option>
+            <option value="34">34 - Žestoka prašinska ili pješčana oluja - bez promjene</option>
+            <option value="35">35 - Žestoka prašinska ili pješčana oluja - započela ili jača</option>
+            <option value="36">36 - Slaba ili umjerena vijavica - niska</option>
+            <option value="37">37 - Jaka vijavica - niska</option>
+            <option value="38">38 - Slaba ili umjerena vijavica - visoka</option>
+            <option value="39">39 - Jaka vijavica - visoka</option>
+            <option value="//">* * 40 - 49 * *</option>
+            <option value="40">40 - Magla ili ledena magla u daljini u vrijeme opažanja - ali ne na postaji tijekom prethodnog sata</option>
+            <option value="41">41 - Magla ili ledena magla u krpama</option>
+            <option value="42">42 - Magla ili ledena magla, nebo vidljivo - slabi</option>
+            <option value="43">43 - Magla ili ledena magla, nebo nevidljivo - slabi</option>
+            <option value="44">44 - Magla ili ledena magla, nebo vidljivo - bez promjene</option>
+            <option value="45">45 - Magla ili ledena magla, nebo nevidljivo - bez promjene</option>
+            <option value="46">46 - Magla ili ledena magla, nebo vidljivo - započela ili jača</option>
+            <option value="47">47 - Magla ili ledena magla, nebo nevidljivo - započela ili jača</option>
+            <option value="48">48 - Magla, stvara inje, nebo vidljivo</option>
+            <option value="49">49 - Magla, stvara inje, nebo nevidljivo</option>
+            <option value="//">* * 50 - 59 * *</option>
+            <option value="50">50 - Rosulja s prekidima - ne smrzava se - slaba</option>
+            <option value="51">51 - Rosulja neprekidna - ne smrzava se - slaba</option>
+            <option value="52">52 - Rosulja s prekidima - ne smrzava se - umjerena</option>
+            <option value="53">53 - Rosulja neprekidna - ne smrzava se - ujerena</option>
+            <option value="54">54 - Rosulja s prekidima - ne smrzava se - jaka</option>
+            <option value="55">55 - Rosulja neprekidna - ne smrzava se - jaka</option>
+            <option value="56">56 - Rosulja - smrzava se - slaba</option>
+            <option value="57">57 - Rosulja - smrzava se - umjerena ili jaka</option>
+            <option value="58">58 - Rosulja i kiša - slaba</option>
+            <option value="59">59 - Rosulja i kiša - umjerena ili jaka</option>
+            <option value="//">* * 60 - 69 * *</option>
+            <option value="60">60 - Kiša s prekidima - ne smrzava se - slaba</option>
+            <option value="61">61 - Kiša neprekidna - ne smrzava se - slaba</option>
+            <option value="62">62 - Kiša s prekidima - ne smrzava se - umjerena</option>
+            <option value="63">63 - Kiša neprekidna - ne smrzava se - umjerena</option>
+            <option value="64">64 - Kiša s prekidima - ne smrzava se - jaka</option>
+            <option value="65">65 - Kiša neprekidna - ne smrzava se - jaka</option>
+            <option value="66">66 - Kiša - smrzava se - slaba</option>
+            <option value="67">67 - Kiša - smrzava se - umjerena ili jaka</option>
+            <option value="68">68 - Kiša ili rosulja i snijega - slaba</option>
+            <option value="69">69 - Kiša ili rosulja i snijega - umjerena ili jaka</option>
+            <option value="//">* * 70 - 79 * *</option>
+            <option value="70">70 - Snijeg s prekidima - slab</option>
+            <option value="71">71 - Snijeg bez prekida - slab</option>
+            <option value="72">72 - Snijeg s prekidima - umjeren</option>
+            <option value="73">73 - Snijeg bez prekida - umjeren</option>
+            <option value="74">74 - Snijeg s prekidima - jak</option>
+            <option value="75">75 - Snijeg bez prekida - jak</option>
+            <option value="76">76 - Ledene iglice (sa ili bez magle)</option>
+            <option value="77">77 - Zrnat snijeg (sa ili bez magle)</option>
+            <option value="78">78 - Pojedinačni snježni kristali poput zvjezdica (sa ili bez magle)</option>
+            <option value="79">79 - Ledena zrna ili solika</option>
+            <option value="//">* * 80 - 89 * *</option>
+            <option value="80">80 - Pljusak kiše - slab</option>
+            <option value="81">81 - Pljusak kiše - umjeren ili jak</option>
+            <option value="82">82 - Pljusak kiše - silan</option>
+            <option value="83">83 - Pljusak susnježice - slab</option>
+            <option value="84">84 - Pljusak susnježice - umjeren ili jak</option>
+            <option value="85">85 - Pljusak snijega - slab</option>
+            <option value="86">86 - Pljusak snijega - ujeren ili jak</option>
+            <option value="87">87 - Pljusak ledenih zrna ili solike sa ili bez kiše ili susnježice - slab</option>
+            <option value="88">88 - Pljusak ledenih zrna ili solike sa ili bez kiše ili susnježice - umjeren ili jak</option>
+            <option value="89">89 - Pljusak tuče, sa ili bez kiše ili susnježice, bez grmljavine - slab</option>
+            <option value="//">* * 90 - 99 * *</option>
+            <option value="90">90 - Pljusak tuče, sa ili bez kiše ili susnježice, bez grmljavine - umjeren ili jak</option>
+            <option value="91">91 - Slaba kiša u vrijeme opažanja - grmljavina tijekom prethodnog sata</option>
+            <option value="92">92 - Umjerena ili jaka kiša u vrijeme opažanja - grmljavina tijekom prethodnog sata</option>
+            <option value="93">93 - Slabi snijeg, susnježica ili tuča u vrijeme opažanja - grmljavina tijekom prethodnog sata</option>
+            <option value="94">94 - Umjereni ili jaki snijeg, susnježica ili tuča u vrijeme opažanja - grmljavina tijekom prethodnog sata</option>
+            <option value="95">95 - Grmljavina - slaba ili umjerena - bez tuče</option>
+            <option value="96">96 - Grmljavina - slaba ili umjerena - s tučom</option>
+            <option value="97">97 - Grmljavina - jaka - bez tuče, ali s kišom i/ili snijegom u vrijeme opažanja</option>
+            <option value="98">98 - Grmljavina kombinirana s prašinskom ili pješćanom olujom u vrijeme opažanja</option>
+            <option value="99">99 - Grmljavina - jaka - s tučom u vrijeme opažanja</option>
+          </select>
+          <select name="pojavew1" id="pojave_w1" class="dropdown" onchange="pojavemenu ()">
+            <option value="/">* * W1 * *</option>
+            <option value="0">0 - N &leq; 5</option>
+            <option value="1">1 - DIO N < 5 i DIO N > 5</5></option>
+            <option value="2">2 - N > 5</option>
+            <option value="3">3 - Pješčana ili prašinska oluja ili visoka vijavica</option>
+            <option value="4">4 - Magla ili ledena magla ili gusta suha mutnoća</option>
+            <option value="5">5 - Rosulja</option>
+            <option value="6">6 - Kiša</option>
+            <option value="7">7 - Snijeg ili susnježica</option>
+            <option value="8">8 - Pljusak (pljuskovi)</option>
+            <option value="9">9 - Grmljavina</option>
+          </select>
+          <select name="pojavew2" id="pojave_w2" class="dropdown" onchange="pojavemenu ()">
+            <option value="/">* * W2 * *</option>
+            <option value="0">0 - N &leq; 5</option>
+            <option value="1">1 - DIO N < 5 i DIO N > 5</option>
+            <option value="2">2 - N > 5</option>
+            <option value="3">3 - Pješčana ili prašinska oluja ili visoka vijavica</option>
+            <option value="4">4 - Magla ili ledena magla ili gusta suha mutnoća</option>
+            <option value="5">5 - Rosulja</option>
+            <option value="6">6 - Kiša</option>
+            <option value="7">7 - Snijeg ili susnježica</option>
+            <option value="8">8 - Pljusak (pljuskovi)</option>
+            <option value="9">9 - Grmljavina</option>
+          </select>
+        </td>
+      </tr>
+      <tr>
+        <td class="centar" colspan="2"><button class="gumb" onclick="synop ()">Ispiši synop</button></td>
+        <td colspan="16"><div id="div0"><b><p class="crveno" id="odjeljak0" style="display:inline"></p></b></div><b><p class="synop" id="odjeljak1" style="display:inline"></p><br><div id="div"><p class="synop" id="odjeljak2" style="display:inline"></p></br></div><div id="divix"><p class="synop" id="odjeljak3" style="display:inline"></p></b><br></div><div id="divix4"><b><p class="synop" id="odjeljak4" style="display:inline"></p></b></div></td>
+      </tr>
+    </table>
+    <p id="dno" style="display:inline">Verzija: 2.8.0</p><br>
+    <p><b>NAPOMENA:</b> Prije prvog korištenja ovog programa, obavezno obavezno pročitati README datoteku.</p>
+  </body>
+  <!--POVIJEST VERZIJA:
+    2.8.0 - Dodani padajući meni-i za pomoć pri štifriranju grupe za pojave.
+
+    2.7.5 - Ispravak koda za provjeru visine niskih i srednjih oblaka.
+
+    2.7.4 - Ispravak kontrole unosa vjetra.
+    
+    2.7.3 - Ispravak manjih bugova.
+
+    2.7.2 - Manja podešavanja rada aplikacije.
+
+    2.7.1 - Ispravljeno izvještavanje 7. grupe u slučaju ww = 00-03 i W1,2 = 0-2.
+    
+    2.7.0 - Dodano šifriranje grupa za insolaciju u 3. odjeljku.
+
+    2.6.2 - Program izbacuje upozorenje ako mjereni ili opažani smjer vjetra nije ispravno upisan.
+
+    2.6.1 - Upozorenje na krivo upisan podatak o vlazi zraka ako se izvještava vlaga zraka umjesto mokre temperature.
+    
+    2.6.0 - Mogućnost da se upisuje vlaga zraka umjesto mokre temperature. (Potrebno namjestiti u postavkama.)
+    Ispravljeno šifriranje 8. grupe u slučaju kad se ne vide oblaci.
+
+    2.5.0 - Dodatak za odjeljak 4.
+    Manje prilagodbe u kodu.
+    Program pokazuje u kojem se terminu treba predati SYNOP izvještaj (za postaje DHMZ-a).
+
+    2.4.0 - Dodano šifriranje specijalnih grupa za stanje mora (potrebno u postavkama namjestiti primorsku postaju).
+
+    2.3.1 - Manje vizualne promjene.
+
+    2.3.0 - Šifriranje oborine u 3. odjeljku.
+    Šifriranje oblačnih slojeva.
+
+    2.2.0 - Dodano šifriranje Ex (nije bitno za synop, ali može biti korisno pri ručnom šifriranju HRKLIMA izvještaja).
+    Dodana grupa 9GGgg.
+    Dodana mogućnost šifriranja maksimalnog udara vjetra većeg ili jednakog 17 m/s za razdoblje W1W2.
+    Manje vizualne promjene.
+    Manje promjene u kodu programa.
+
+    2.1.2 - Ispravljena greška zbog koje je program 00 UTC pokazivao kao 0 UTC.
+    Novi snijeg će biti šifriran samo ako snijeg pokriva više od polovine tla.
+    Program prikazuje u kojim jedinicama se upisuje očitanje barometra.
+
+    2.1.1 - Program od sad izbacuje upozorenje ako je za visinu novog snijega upisano više od 99 cm.
+    Manje vizualne promjene.
+
+    2.1.0 - Program od sada šifrira i novi snijeg.
+    Manje vizualne promjene u svrhu integriranja opcije za upis novog snijega.
+    Od sada pomoć pri upisu u određena polja se može dobiti tako da se tapne na naziv polja.
+    Mogućnost promjene broja bloka prilikom editiranja u editoru teksta.
+
+    2.0.3 - Ispravljeno računanje 3. grupe u 3. odjeljku.
+    Program sada izbacuje ispravnu vrijednost grupe u slučaju da nije poznata minimalna temperatura na 5 cm iznad tla.
+
+    2.0.2 - Ispravljeno računanje 4. grupe u 3. odjeljku.
+    U slučaju da je stanje tla pod snijegom 1 ili 5, program od sada tu grupu ispisuje kao "41998" ili "45998", odnosno izvještava snijeg u krpama.
+    U slučaju visine snijega manje od 0.5 cm, program će grupu šrifrirati kao "997".
+
+    2.0.1 - Ispravljen kod za računanje 7. grupe u 3. odjeljku.
+    U slučaju oborine u tragovima grupa program sada ispisuje grupu "79999", a u slučaju oborine 999,8 mm ili veće, program ispisuje "79998".
+
+    2.0.0 - Promjenjen vizualni izgled aplikacije.
+    Promjene u kodu aplikacije.
+    Aplikacija ne prikazuje polje za unos temperature mora ako postaja nije primorska postaja. U slučaju da se radi o primorskoj postaji, polje je vidljivo u svakom terminu, ali ako podatak nije unesen, u synop izvještaju je izostavljena grupa za temperaturu mora te cijeli drugi odjeljak.
+    Polja za unos maksimalne temperature, minimalne temperature, minimalne temperature na 5 cm iznad tla te visine snijega i oborine su prikazani samo u terminima kada se ti podaci izvještavaju u synop izvještaju.
+    Aplikacija izbacuje upozorenja ako nisu uneseni bitni podaci ili su podaci uneseni pogrešno.
+
+    1.0.0 - Aplikacija računa stvarni tlak vodene pare, temperaturu rosišta i relativnu vlagu zraka te svodi tlak na 0°C i na SMR. 
+    Također, aplikacija izračunava synop kodove te šifrira synop prvi odjeljak synop izvještaja, temperaturu mora u drugom odjeljku te 1., 2., 3. ,4. i 7. grupu trećeg odjeljka i u izvještaj uključuje i specijalne grupe koje motritelj sam unosi.
+    Vizualni izgled aplikacije nije vezan za izgled dnevnika.-->
+</html>

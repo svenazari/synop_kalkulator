@@ -1,0 +1,77 @@
+body {
+  font-family: "Comic Sans MS", "Comic Sans";
+}
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+td {
+  min-width: 70px;
+}
+.centar {
+  text-align: center;
+}
+.unos {
+  background-color: turquoise;
+  font-family: "Comic Sans MS", "Comic Sans";
+}
+.unosbr {
+  background-color: turquoise;
+  text-align: center;
+  font-family: "Comic Sans MS", "Comic Sans";
+  border-radius: 5px;
+}
+.unosbrleft {
+  background-color: turquoise;
+  font-family: "Comic Sans MS", "Comic Sans";
+  border-radius: 5px;
+}
+.sporedno {
+  background-color: darkolivegreen;
+}
+.sporednobr {
+  background-color: darkolivegreen;
+  text-align: center;
+  font-family: "Comic Sans MS", "Comic Sans";
+  border-radius: 5px;
+}
+.izracun {
+  background-color: gray;
+}
+.vrh {
+  background-color: yellow;
+  text-align: center;
+}
+.crveno {
+  color: red;
+}
+.gumb {
+  font-size: 15px;
+  background-color: gray;
+  color: black;
+  border: none;
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  border-radius: 5px;
+}
+abbr {
+  position: relative;
+}
+abbr:hover::after {
+  position: absolute;
+  display: block;
+  padding: 1em;
+  background: seashell;
+  content: attr(title);
+}
+.dropdown {
+  background-color: turquoise;
+  font-family:"Comic Sans MS", "Comic Sans";
+  padding: 1px;
+  border-radius: 5px;
+}
+#dno {
+  font-size: 10px;
+}
