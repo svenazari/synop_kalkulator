@@ -1,12 +1,12 @@
 UPUTE ZA KORIŠTENJE:
 Prije prvog korištenja treba prilagoditi varijable u datoteci varijable.js.
-Većinu varijabli treba prepisati iz ditalnog dnevnika motrenja (Pomoć -> Podaci o postaji), a one koje se ne nalaze u digitalnom dnevniku motritelj upisuje vezano uz tip uređaja i mjerne jedinice koje se koriste u radu.
+Većinu varijabli treba prepisati iz ditalnog dnevnika motrenja (Pomoć -> Podaci o postaji), a one koje se ne nalaze u digitalnom dnevniku motritelj upisuje vezano uz tip uređaja i mjerne jedinice koje se koriste u radu. (Trenutne vrijednosti važe za MAO Zagreb - Maksimir.)
 Ostale datoteke NE MJENJATI!
 Program radi u interent pregledniku. Preporuka je na uređaju na kojem će se koristiti program uvjek imati najnoviju verziju internet preglednika.
 
 UPUTE ZA KORIŠTENJE (verzija za mobitele):
 Prije prvog korištenja treba prilagoditi varijable u dijelu "varijable koje se prilagođavaju postaji".
-Većinu varijabli treba prepisati iz ditalnog dnevnika motrenja (Pomoć -> Podaci o postaji), a one koje se ne nalaze u digitalnom dnevniku motritelj upisuje vezano uz tip uređaja i mjerne jedinice koje se koriste u radu.
+Većinu varijabli treba prepisati iz ditalnog dnevnika motrenja (Pomoć -> Podaci o postaji), a one koje se ne nalaze u digitalnom dnevniku motritelj upisuje vezano uz tip uređaja i mjerne jedinice koje se koriste u radu. (Trenutne vrijednosti važe za MAO Zagreb - Maksimir.)
 Ostatak koda NE MJENJATI!
 Program radi u interent pregledniku. Preporuka je na uređaju na kojem će se koristiti program uvjek imati najnoviju verziju internet preglednika.
 
