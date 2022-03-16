@@ -1,0 +1,1810 @@
+﻿<html>
+<!--UPUTE ZA KORIŠTENJE:
+    Prije prvog korištenja treba prilagoditi varijable u dijelu "varijable koje se prilagođavaju postaji".
+    Većinu varijabli treba prepisati iz ditalnog dnevnika motrenja (Pomoć -> Podaci o postaji), a one koje se ne nalaze u digitalnom dnevniku motritelj upisuje vezano uz tip uređaja i mjerne jedinice koje se koriste u radu.
+    Nakon što se unesu sve potrebne varijable, ovu datoteku treba spremiti pod imenom "synop_kalkulator_2.7.4.html" (bez navodnika).
+    Ostatak koda NE MJENJATI!
+    Program radi u interent pregledniku. Preporuka je na uređaju na kojem će se koristiti program uvjek imati najnoviju verziju internet preglednika.
+
+    O PROGRAMU:
+    Verzija 2.8.0 računa temperaturu rostišta, stvarni tlak vodene pare, relativnu vlagu zraka te svodi tlak na 0°C i na srednju morsku razinu (u planu je dodavanje mogućnosti da umjesto svođenja na SMR program računa visinu izobarne plohe).
+    Aplikacija također izračunava synop kodove te šifrira prvi odjeljak synop izvještaja, temperaturu mora u drugom odjeljku te 1., 2., 3. ,4., 6. i 7. grupu trećeg odjeljka, grupe za insolaciju, grupe oblačnih slojeva, specijalnu grupu za novi snijeg te specijalne grupe za brzinu i smijer udara vjetra većeg ili jednakog 17 m/s i specijlne grupe za stanje mora te u izvještaj uključuje i ostale specijalne grupe te odjeljak 4 koje motritelj sam unosi.
+
+    ŠTO JE NOVO (cijelu povijest verzija pogledati na dnu koda):
+    Dodani padajući meni-i za pomoć pri štifriranju grupe za pojave.
+
+    IZJAVA O ODRICANJU OD ODGOVORNOSTI:
+    Ovaj program je napisan kao pomoćno sredstvo za dobivanje izračunatih vrijednosti i synop izvještaja u slučaju kvara računalne opreme ili nestanka struje na meteorološkoj postaji.
+    Program trebaju koristiti školovani motritelji koji znaju kako kako trebaju izgledati dobiveni podaci i synop izvještaj kako bi mogli ispraviti dobiveni podatak u slučaju greške u programu.
+    Tvorac programa ne preuzima odgovornost za eventualnu štetu nastalu korištenjem ovog programa.
+    
+    KONTAKT:
+    Pitanja, prijedlozi, kritike, uočeni problemi i sve ostalo vezano uz rad programa se može slati na e-mail adresu: stefan.muza@cirus.dhz.hr-->
+  <head>
+    <script>
+      // varijable koje se prilagođavaju postaji (mjenjati u skladu za uputama u komentarima za svaku varijablu)
+      // podaci o postaji
+      var II = 14; //broj bloka
+      var iii = 240; //broj postaje
+      var h = 123; //nadmorska visina postaje [m]
+      var hb = 127.62; //nadmorska visina barometra [m]
+      var hsr = 250; //srednja nadmorska visina u krugu radiusa 150 km od postaje [m]
+      var GS = 45.817; //geografska širina postaje [0.001°]
+      var pk = 95; //postotak kopna u krugu radiusa 150 km
+      var db = 0; //dubina mora ispod postaje [m]
+      var dbs = 20; //srednja dubina mora ispod postaje u krugu od 150 km [m]
+      var ip = 0; //izobarna ploha (0 [SMR], 8 [850 hPa], 9 [925 hPa])
+      // vrste instrumenata
+      var bi1 = 1; //mjerne jedinice na barometru (1 [mmHg] ili 2 [hPa])
+      var bi2 = 2; //koriekcija po vrsti barometra (1, 2, 3, 4 ili 50)
+      // program izvještavanja
+      var tmox = 2; //primorska postaja (1 [da], 2 [ne])
+      var iW = 1; //jedinica brzine vjetra (0 - ocjenjeno [m/s], 1 - mjereno [m/s], 3 - ocjenjeno [kt], 4 mjereno [kt]
+      var brmot = 5; //broj motritelja na postaji (99 ako postaja nije na mreži DHMZ-a)
+      var utd = 1; //mokra temepratura [1] ili vlaga zraka [2]
+    </script>
+    <meta charset="UTF-8" />
+    <title>SYNOP kalkulator</title>
+    <style>
+      /* vizualni izgled */
+      body {
+        font-family: "Comic Sans MS", "Comic Sans";
+      }
+      table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+      }
+      td {
+        min-width: 70px;
+      }
+      .centar {
+        text-align: center;
+      }
+      .unos {
+        background-color: turquoise;
+        font-family: "Comic Sans MS", "Comic Sans";
+      }
+      .unosbr {
+        background-color: turquoise;
+        text-align: center;
+        font-family: "Comic Sans MS", "Comic Sans";
+        border-radius: 5px;
+      }
+      .unosbrleft {
+        background-color: turquoise;
+        font-family: "Comic Sans MS", "Comic Sans";
+        border-radius: 5px;
+      }
+      .sporedno {
+        background-color: darkolivegreen;
+      }
+      .sporednobr {
+        background-color: darkolivegreen;
+        text-align: center;
+        font-family: "Comic Sans MS", "Comic Sans";
+        border-radius: 5px;
+      }
+      .izracun {
+        background-color: gray;
+      }
+      .vrh {
+        background-color: yellow;
+        text-align: center;
+      }
+      .crveno {
+        color: red;
+      }
+      .gumb {
+        font-size: 15px;
+        background-color: gray;
+        color: black;
+        border: none;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        border-radius: 5px;
+      }
+      abbr {
+        position: relative;
+      }
+      abbr:hover::after {
+        position: absolute;
+        display: block;
+        padding: 1em;
+        background: seashell;
+        content: attr(title);
+      }
+      .dropdown {
+        background-color: turquoise;
+        font-family:"Comic Sans MS", "Comic Sans";
+        padding: 1px;
+        border-radius: 5px;
+      }
+      #dno {
+        font-size: 10px;
+      }
+    </style>
+    <script>
+      function load () {
+        var tww = document.getElementById("tw").value;
+        // varijable vremena
+        var d = new Date();
+        var day = d.getDate();
+        var day_displ = String('00' + day).slice(-2); // datum za ispis
+        var day_utc = d.getUTCDate(); // datum za synop
+        var month = d.getMonth() + 1;
+        var month_displ = String ('00' + month).slice(-2); // mjesec za ispis
+        var year = d.getFullYear(); // godina za ispis
+        var hour = d.getHours();
+        var hour_displ = String('00' + hour).slice(-2); // sat za ispis
+        var minutes = d.getMinutes();
+        var minutes_displ = String('00' + minutes).slice(-2); // minute za ispis
+        // uvjeti
+        if (minutes > 49) { // sat za synop
+          hour_utc = d.getUTCHours() + 1;
+          hour_utc1 = String('00' + hour_utc).slice(-2); 
+        } else {
+          hour_utc = d.getUTCHours();
+          hour_utc1 = String('00' + hour_utc).slice(-2);
+        }
+        if (hour_utc1 == "24") { //sat synop - nastavak
+          hour_utc_displ = "00"
+        } else {
+          hour_utc_displ = hour_utc1
+        }
+        if (hour_utc_displ == "00") {
+          day_utc1 = day_utc + 1;
+          day_utc_displx = String('00' + day_utc1).slice(-2); 
+        } else {
+          day_utc1 = day_utc;
+          day_utc_displx = String('00' + day_utc1).slice(-2); 
+        }
+        if (bi1 == 1) {
+          unt = "mmHg"
+        } else {
+          unt = "hPa"
+        }
+        if (hour_utc_displ == "06") {
+          Re = " (18 UTC - 06 UTC)"
+        } else if (hour_utc_displ == "18") {
+          Re = " (06 UTC - 18 UTC)"
+        } else if (hour_utc_displ == "00") {
+          Re = " (18 UTC - 00 UTC)"
+        } else if (hour_utc_displ == "12") {
+          Re = " (06 UTC - 12 UTC)"
+        } else {
+          Re = " (Ne izvještava se)"
+          document.getElementById('oborina').setAttribute("style", "display:none");
+        }
+        if (hour_utc_displ == "06") {
+          ReSw = " (24 sata)"
+        } else if (hour_utc_displ == "18") {
+          ReSw = " (12 sati)"
+        } else {
+          ReSw = ''
+        }
+        document.getElementById("ReSw").innerHTML = ReSw;
+        if (hour_utc_displ !== "18") {
+          document.getElementById('max').setAttribute("style", "display:none");
+        } else {
+          document.getElementById('max').setAttribute("style", "display:block");
+        }
+        if (hour_utc_displ !== "06") {
+          document.getElementById('min').setAttribute("style", "display:none");
+        } else {
+          document.getElementById('min').setAttribute("style", "display:block");
+        }
+        if (hour_utc_displ == "06") {
+          document.getElementById('sss').setAttribute("style", "display:block");
+        } else if (hour_utc_displ == "18") {
+          document.getElementById('sss').setAttribute("style", "display:block");
+        } else {
+          document.getElementById('sss').setAttribute("style", "display:none");
+        }
+        if (hour_utc_displ == "06") {
+          document.getElementById('r24').setAttribute("style", "display:block");
+        } else if (hour_utc_displ == "12") {
+          document.getElementById('r24').setAttribute("style", "display:block");
+        } else {
+          document.getElementById('r24').setAttribute("style", "display:none");
+        }
+        if (tmox == "2" || tww == '') {
+          document.getElementById("div").setAttribute("style", "display:none");
+        } else {
+          document.getElementById("div").setAttribute("style", "display:block");
+        }
+        if (tmox == "2") {
+          document.getElementById("more").setAttribute("style", "background-color:black");
+        } else {
+          document.getElementById("more").setAttribute("style", "background-color:turquoise");
+        }
+        if (tmox == "2") {
+          document.getElementById("more2").setAttribute("style", "background-color:black");
+        } else {
+          document.getElementById("more2").setAttribute("style", "background-color:turquoise");
+        }
+        if (tmox == "2") {
+          document.getElementById("more3").setAttribute("style", "display:none");
+        } else {
+          document.getElementById("more3").setAttribute("style", "display:block");
+        }
+        if (tmox == "2") {
+          document.getElementById("more4").setAttribute("style", "display:none");
+        } else {
+          document.getElementById("more4").setAttribute("style", "display:block");
+        }
+        if (utd == "1") {
+          utdx = "T'"
+        } else if (utd == "2") {
+          utdx = "U"
+          document.getElementById("tddx").setAttribute("style", "background-color:black");
+          document.getElementById("tddx1").setAttribute("style", "background-color:black");
+          document.getElementById("vpdx").setAttribute("style", "background-color:black");
+          document.getElementById("vpdx1").setAttribute("style", "background-color:black");
+          document.getElementById("uuux").setAttribute("style", "background-color:black");
+          document.getElementById("uuux1").setAttribute("style", "background-color:black");
+          document.getElementById("tdd").setAttribute("style", "display:none");
+          document.getElementById("vpd").setAttribute("style", "display:none");
+          document.getElementById("uuu").setAttribute("style", "display:none");
+          document.getElementById("tdddiv").setAttribute("style", "display:none");
+          document.getElementById("vpddiv").setAttribute("style", "display:none");
+          document.getElementById("uuudiv").setAttribute("style", "display:none");
+        }
+        if (hour_utc_displ == "06") {
+          document.getElementById("suncedan").setAttribute("style", "display:inline");
+        } else {
+          document.getElementById("suncedan").setAttribute("style", "display:none");
+        }
+        document.getElementById("divix").setAttribute("style", "display:none");
+        document.getElementById("divix4").setAttribute("style", "display:none");
+        document.getElementById("utdxx").innerHTML = utdx;
+        if ((tmox == "1" && hour_utc_displ == "00") || (tmox == "1" && hour_utc_displ == "03") || (tmox == "1" && hour_utc_displ == "06") || (tmox == "1" && hour_utc_displ == "09") || (tmox == "1" && hour_utc_displ == "12") || (tmox == "1" && hour_utc_displ == "15") || (tmox == "1" && hour_utc_displ == "18") || (tmox == "1" && hour_utc_displ == "21")) {
+          document.getElementById("more5").setAttribute("style", "display:block");
+        } else {
+          document.getElementById("more5").setAttribute("style", "display:none");
+        }
+        if (ip == "0") {
+          bxxx = "P"
+        } else {
+          bxxx = "H"
+        }
+        if (bi1 == "2") {
+          mjed = "hPa"
+        } else {
+          mjed = "mmHg"
+        }
+
+        //zaglavlje programa i nulti odjeljak
+      
+        if (brmot == "2") {
+          if (hour_utc_displ == "06" || hour_utc_displ == "07" || hour_utc_displ == "08" || hour_utc_displ == "09" || hour_utc_displ == "10" || hour_utc_displ == "11" || hour_utc_displ == "12" || hour_utc_displ == "13" || hour_utc_displ == "18" || hour_utc_displ == "19" || hour_utc_displ == "20"){
+            time_date = "POSTAJA: " + II + iii + " | NADMORSKA VISINA: " + h + " m | DATUM: " + day_displ + "." + month_displ + "." + year + ". | VRIJEME: " + hour_displ + ":" + minutes_displ + " | TERMIN: " + hour_utc_displ + " UTC *"
+          } else {
+            time_date = "POSTAJA: " + II + iii + " | NADMORSKA VISINA: " + h + " m | DATUM: " + day_displ + "." + month_displ + "." + year + ". | VRIJEME: " + hour_displ + ":" + minutes_displ + " | TERMIN: " + hour_utc_displ + " UTC"
+          } 
+        } else if (brmot == "3") {
+          if (hour_utc_displ == "03" || hour_utc_displ == "04" || hour_utc_displ == "05" ||hour_utc_displ == "06" || hour_utc_displ == "07" || hour_utc_displ == "08" || hour_utc_displ == "09" || hour_utc_displ == "10" || hour_utc_displ == "11" || hour_utc_displ == "12" || hour_utc_displ == "13" || hour_utc_displ == "18" || hour_utc_displ == "19" || hour_utc_displ == "20") {
+            time_date = "POSTAJA: " + II + iii + " | NADMORSKA VISINA: " + h + " m | DATUM: " + day_displ + "." + month_displ + "." + year + ". | VRIJEME: " + hour_displ + ":" + minutes_displ + " | TERMIN: " + hour_utc_displ + " UTC *"
+          } else {
+            time_date = "POSTAJA: " + II + iii + " | NADMORSKA VISINA: " + h + " m | DATUM: " + day_displ + "." + month_displ + "." + year + ". | VRIJEME: " + hour_displ + ":" + minutes_displ + " | TERMIN: " + hour_utc_displ + " UTC"
+          }
+        } else if (brmot == "4") {
+          if (hour_utc_displ == "00" ||hour_utc_displ == "03" || hour_utc_displ == "04" || hour_utc_displ == "05" ||hour_utc_displ == "06" || hour_utc_displ == "07" || hour_utc_displ == "08" || hour_utc_displ == "09" || hour_utc_displ == "10" || hour_utc_displ == "11" || hour_utc_displ == "12" || hour_utc_displ == "13" || hour_utc_displ == "14" || hour_utc_displ == "15" || hour_utc_displ == "18" || hour_utc_displ == "19" || hour_utc_displ == "20" || hour_utc_displ == "21") {
+            time_date = "POSTAJA: " + II + iii + " | NADMORSKA VISINA: " + h + " m | DATUM: " + day_displ + "." + month_displ + "." + year + ". | VRIJEME: " + hour_displ + ":" + minutes_displ + " | TERMIN: " + hour_utc_displ + " UTC *"
+          } else {
+            time_date = "POSTAJA: " + II + iii + " | NADMORSKA VISINA: " + h + " m | DATUM: " + day_displ + "." + month_displ + "." + year + ". | VRIJEME: " + hour_displ + ":" + minutes_displ + " | TERMIN: " + hour_utc_displ + " UTC"
+          }
+        } else if (brmot >= 5 && brmot < 99) {
+          if (hour_utc_displ == "00" ||hour_utc_displ == "03" || hour_utc_displ == "04" || hour_utc_displ == "05" ||hour_utc_displ == "06" || hour_utc_displ == "07" || hour_utc_displ == "08" || hour_utc_displ == "09" || hour_utc_displ == "10" || hour_utc_displ == "11" || hour_utc_displ == "12" || hour_utc_displ == "13" || hour_utc_displ == "14" || hour_utc_displ == "15" || hour_utc_displ == "16" || hour_utc_displ == "17" || hour_utc_displ == "18" || hour_utc_displ == "19" || hour_utc_displ == "20" || hour_utc_displ == "21") {
+            time_date = "POSTAJA: " + II + iii + " | NADMORSKA VISINA: " + h + " m | DATUM: " + day_displ + "." + month_displ + "." + year + ". | VRIJEME: " + hour_displ + ":" + minutes_displ + " | TERMIN: " + hour_utc_displ + " UTC *"
+          } else {
+            time_date = "POSTAJA: " + II + iii + " | NADMORSKA VISINA: " + h + " m | DATUM: " + day_displ + "." + month_displ + "." + year + ". | VRIJEME: " + hour_displ + ":" + minutes_displ + " | TERMIN: " + hour_utc_displ + " UTC"
+          }
+        } else if (brmot == 99) {
+          time_date = "POSTAJA: " + II + iii + " | NADMORSKA VISINA: " + h + " m | DATUM: " + day_displ + "." + month_displ + "." + year + ". | VRIJEME: " + hour_displ + ":" + minutes_displ + " | TERMIN: " + hour_utc_displ + " UTC"
+        } else {
+          alert ("Neispravan broj motritelja na postaji!");
+          time_date = "POSTAJA: " + II + iii + " | NADMORSKA VISINA: " + h + " m | DATUM: " + day_displ + "." + month_displ + "." + year + ". | VRIJEME: " + hour_displ + ":" + minutes_displ + " | TERMIN: " + hour_utc_displ + " UTC"
+        }
+        var odjeljak0 = "AAXX" + " " + day_utc_displx + hour_utc_displ + iW + " " + II + iii;
+        document.getElementById("timedate").innerHTML = time_date;
+        document.getElementById("bxxx").innerHTML = bxxx;
+        document.getElementById("Re").innerHTML = Re;
+        document.getElementById("mjed").innerHTML = mjed;
+        document.getElementById("odjeljak0").innerHTML = odjeljak0;
+        return odjeljak0;
+      }
+
+      //vidljivost
+
+      function vidljivost () {
+        var VVX = document.getElementById("km").value; //vidljivost
+        if (VVX == "") {
+          alert("Potrebno upisati vidljivost!");
+          VVX1 = "//";
+        } else {
+          if (VVX < 0.1) {
+            VV = 00;
+          } else if (VVX >= 0.1 && VVX <= 5) {
+            VV = VVX * 10;
+          } else if (VVX > 5 && VVX <= 30) {
+            VVY = parseFloat(VVX)
+            VV = VVY + 50;
+          } else if (VVX > 30 && VVX < 35) {
+            VV = 80;
+          } else if (VVX >= 35 && VVX <= 70) {
+            VV = ((VVX/5) + 74).toFixed(0);
+          } else {
+            VV = 89;
+          }
+          var VVs = String(('00' + VV).slice(-2));
+          if (VVX == '') {
+            VVsq = "//";
+          } else {
+            VVsq = VVs;
+          }
+          document.getElementById("VVizr").innerHTML = VVsq;
+          return VVsq;
+        }
+      }
+
+      // ukupna naoblaka
+
+      function naoblaka () {
+        var NN10 = document.getElementById("nn").value; // naoblaka X/10
+        if (NN10 == '' || NN10 > 10) {
+          alert("Vrijednost naoblake treba biti od 0 do 10!");
+        } else {
+          var NN8 = (NN10 / 10 * 8).toFixed(0);
+          return NN8;
+        }
+      }
+
+      // visoki oblaci
+
+      function visokiobl () {
+        var NNN = document.getElementById("nn").value;
+        var ch = document.getElementById("ch").value // šifra visokih oblaka
+        if (NNN !== "0" && ch == '') {
+          alert("Potrebno upisati vrijednost od 0 do 9 ili /")
+        }
+      }
+
+      // srednji oblaci
+
+      function srednjiobl () {
+        var NNN = document.getElementById("nn").value;
+        var cm = document.getElementById("cm").value // šifra srednjih oblaka
+        if (NNN !== "0" && cm == '') {
+          alert("Potrebno upisati vrijednost od 0 do 9 ili /");
+        }
+      }
+
+      function srednjiosmine () {
+        var NNN = document.getElementById("nn").value;
+        var NNm10 = document.getElementById("nnm").value;
+        if (NNN !== "0" && NNm10 == '') {
+          alert("Potrebno je upisati količinu srednjih oblaka u desetinama ili / ako oblaci nisu vidljivi!");
+        } else {
+          NNm8 = (NNm10 / 10 * 8).toFixed(0);
+        }
+        return NNm8;
+      }
+
+      function srednjioblvis () {
+        var NNN = document.getElementById("nn").value;
+        var cm = document.getElementById("cm").value // šifra srednjih oblaka
+        var kmm = document.getElementById("kmm").value; //visina podnice najnižeg oblaka [km]
+        if (NNN !== "0" && cm == "/" && kmm == '') {
+          hm = "/";
+        } else if (NNN !== "0" && cm !== "0" && kmm == '') {
+          alert ("Obavezno upisati visinu srednjih oblaka!")
+        } else {
+          if (kmm < 0.05){
+            hm = 0;
+          } else if (kmm < 0.1) {
+            hm = 1;
+          } else if (kmm < 0.2) {
+            hm = 2;
+          } else if (kmm < 0.3) {
+            hm = 3;
+          } else if (kmm < 0.6) {
+            hm = 4;
+          } else if (kmm < 1) {
+            hm = 5;
+          } else if (kmm < 1.5) {
+            hm = 6;
+          } else if (kmm < 2) {
+            hm = 7;
+          } else if (kmm < 2.5) {
+            hm = 8;
+          } else if (kmm >= 2.5) {
+            hm = 9;
+          } else {
+            hm = "/";
+          } 
+        } 
+
+        if (kmm == '') {
+          hmq = ''
+          hmq1 = 9;
+        } else {
+          hmq = hm;
+          hmq1 = hm;
+        }
+        document.getElementById("hmizr").innerHTML = hmq;
+        return hmq1;
+      }
+
+      // niski oblaci
+
+      function niskiobl () {
+        var NNN = document.getElementById("nn").value;
+        var cl = document.getElementById("cl").value // šifra niskih oblaka
+        if (NNN !== "0" && cl == '') {
+          alert("Potrebno upisati vrijednost od 0 do 9 ili /");
+        }
+      }
+
+      function niskiosmine () {
+        var NNN = document.getElementById("nn").value;
+        var NNl10 = document.getElementById("nnl").value;
+        if (NNN !== "0" && NNl10 == '') {
+          alert("Potrebno je upisati količinu niskih oblaka u desetinama ili / ako oblaci nisu vidljivi!");
+        } else {
+          NNl8 = (NNl10 / 10 * 8).toFixed(0);
+        }
+        return NNl8;
+      }
+
+      function niskioblvis () {
+        var NNN = document.getElementById("nn").value;
+        var cl = document.getElementById("cl").value // šifra niskih oblaka
+        var kml = document.getElementById("kml").value; //visina podnice najnižeg oblaka [km]
+        if (NNN !== "0" && cl == "/" && kml == '') {
+          hl = "/";
+        } else if (NNN !== "0" && cl !== "0" && kml == '') {
+          alert ("Obavezno upisati visinu niskih oblaka!")
+        } else {
+          if (kml < 0.05){
+            hl = 0;
+          } else if (kml < 0.1) {
+            hl = 1;
+          } else if (kml < 0.2) {
+            hl = 2;
+          } else if (kml < 0.3) {
+            hl = 3;
+          } else if (kml < 0.6) {
+            hl = 4;
+          } else if (kml < 1) {
+            hl = 5;
+          } else if (kml < 1.5) {
+            hl = 6;
+          } else if (kml < 2) {
+            hl = 7;
+          } else if (kml < 2.5) {
+            hl = 8;
+          } else if (kml >= 2.5) {
+            hl = 9;
+          } else {
+            hl = "/";
+          }
+        }
+
+        if (kml == '') {
+          hlq = ''
+          hlq1 = 0;
+        } else {
+          hlq = hl;
+          hlq1 = hl;
+        }
+        document.getElementById("hlizr").innerHTML = hlq;
+        return hlq1;
+      }
+
+      // visina najnižih oblaka
+
+      function najniziobl () {
+        var cl = document.getElementById("cl").value; // šifra niskih oblaka
+        if (cl == "/") {
+          hnis = "/"
+        } else {
+          hnis = niskioblvis ();
+        }
+        var hsred = srednjioblvis ();
+        if (hsred < hnis) {
+          alert("Visina srednjih oblaka manja od visine niskih oblaka!")
+        } else {
+          if (hnis == "0") {
+            hobl = hsred;
+          } else if (hnis == "/") {
+            hobl = "/"
+          } else {
+            hobl = Math.min(hsred, hnis)
+          }
+        }
+        return hobl;
+      }
+
+      // vjetar
+
+      function vjetarsmjer () { //smjer vjetra
+        var dd = document.getElementById("dd").value;
+        var DD = document.getElementById("DD").value;
+        if (dd == '' && DD == '') {
+          alert("Mora biti upisan podatak ili mjerenog ili opažanog smjera vjetra!");
+        } else {
+          if ( dd == '') {
+            ddx = (DD / 32 * 36).toFixed(0);
+            ddxd = String(('00' + ddx).slice(-2));
+          } else {
+            ddx = dd;
+            ddxd = String(('00' + ddx).slice(-2));
+          }
+        }
+        return ddxd;
+      }
+
+      function vjetarmerprov () {
+        var dd = document.getElementById("dd").value;
+        if (dd !== '') {
+          if (dd < 0 || dd > 36) {
+            alert ("Neispravno upisan mjereni smjer vjetra! Vrijednost mora biti od 0 do 36.")
+          }
+        }
+      }
+      
+      function vjetaropprov () {
+        var DD = document.getElementById("DD").value;
+        if (DD !== '') {
+          if (DD < 0 || DD > 32) {
+            alert ("Neispravno upisan opažani smjer vjetra! Vrijednost mora biti od 0 do 32.")
+          } else if (DD % 2 !== 0) {
+            alert ("Upisuju se samo parni smjerovi!")
+          }
+        }
+      }
+
+      function vjetarbrzina () { //brzina vjetra
+        var ff = document.getElementById("ff").value;
+        var FF = document.getElementById("FF").value;
+        if (ff == '' && FF == '') {
+          alert("Mora biti unesen ili podatak o brzini vjetra ili podatak o jačini vjetra!");
+        } else { 
+          if (ff == '') {
+            if (FF == 0) {
+              ffxoi = 0
+            } else if (FF == "1") {
+              ffxoi = 1
+            } else if (FF == "2") {
+              ffxoi = 2
+            } else if (FF == "3") {
+              ffxoi = 4
+            } else if (FF == "4") {
+              ffxoi = 6
+            } else if (FF == "5") {
+              ffxoi = 9
+            } else if (FF == "6") {
+              ffxoi = 12
+            } else if (FF == "7") {
+              ffxoi = 16
+            } else if (FF == "8") {
+              ffxoi = 19
+            } else if (FF == "9") {
+              ffxoi = 23
+            } else if (FF == "10") {
+              ffxoi = 27
+            } else if (FF == "11") {
+              ffxoi = 31
+            } else if (FF == "12") {
+              ffxoi = 35
+            } else {
+              ffxoi = "/"
+            }
+          } else {
+            ffxoi = ff;
+          }
+        }
+        ffxoix = String(('00' + ffxoi).slice(-2));    
+        return ffxoix;
+      }
+
+      function vjetarbrzprov () {
+        var dd = document.getElementById("dd").value;
+        var ff = document.getElementById("ff").value;
+        if (dd !== '' && ff !== '') {
+          if (dd !== "00" && ff == "0") {
+            alert ("Smjer i brzina vjetra nisu usklađeni!")
+          } else if (dd == "00" && ff !== "0") {
+            alert ("Smjer i brzina vjetra nisu usklađeni!")
+          }
+        }
+      }
+
+      function vjetarjacprov () {
+        var DD = document.getElementById("DD").value;
+        var FF = document.getElementById("FF").value;
+        if (DD !== '' && FF !== '') {
+          if (DD !== "00" && FF == "0") {
+            alert ("Opažani smjer i jačina vjetra nisu usklađeni!")
+          } else if (DD == "00" && FF !== "0") {
+            alert ("Opažani smjer i jačina vjetra nisu usklađeni!")
+          }
+        }
+      }
+
+      // stanje tla (Ex)
+    
+      function tlo () {
+        var ess1 = document.getElementById("es").value;
+        var ems1 = document.getElementById("em").value;
+
+        if (ess1 == '') {
+          ess1s = "/";
+        } else {
+          ess1s = ess1;
+        }
+
+        if (ems1 == '') {
+          ems1s = "/";
+        } else {
+          ems1s = ems1;
+        }
+
+        if (ems1s == "0") {
+          ex = 4
+        } else if (ems1s == "1") {
+          ex = 5
+        } else if (ems1s == "2") {
+          ex = 6
+        } else if (ems1s == "3") {
+          ex = 7
+        } else if (ems1s == "4") {
+          ex = 7
+        } else if (ems1s == "5") {
+          ex = 5
+        } else if (ems1s == "6") {
+          ex = 8
+        } else if (ems1s == "7") {
+          ex = 9
+        } else if (ems1s == "8") {
+          ex = 9
+        } else if (ems1s == "9") {
+          ex = 9
+        } else if (ems1s == "/" && ess1s == "0") {
+          ex = 0
+        } else if (ems1s == "/" && ess1s == "1") {
+          ex = 1
+        } else if (ems1s == "/" && ess1s == "2") {
+          ex = 2
+        } else if (ems1s == "/" && ess1s == "3") {
+          ex = 2
+        } else if (ems1s == "/" && ess1s == "4") {
+          ex = 3
+        } else if (ems1s == "/" && ess1s == "5") {
+          ex = 4
+        } else if (ems1s == "/" && ess1s == "6") {
+          ex = 0
+        } else if (ems1s == "/" && ess1s == "7") {
+          ex = 0
+        } else if (ems1s == "/" && ess1s == "8") {
+          ex = 0
+        } else if (ems1s == "/" && ess1s == "9") {
+          ex = 0
+        } else {
+          ex = "/"
+        }
+        document.getElementById("ex").innerHTML = ex;
+      }
+
+      // vlaga i tlak
+
+      function vlagatlak () {
+        var TS = document.getElementById("suhatemp").value;
+        var TM = document.getElementById("mokratemp").value;
+        var Tb = document.getElementById("barotemp").value;
+        var b = document.getElementById("baroočitanje").value;
+        // cijepanje mokre temperature
+        TMs = TM.slice(0, TM.search(/\d/)); // slovo
+        TMb = TM.replace(TMs, ''); // broj
+        if (TMs == "L"){
+          TMs1 = "L"
+        } else if (TMs == "l") {
+          TMs1 = "L"
+        } else if (TMs == "V") {
+          TMs1 = "V"
+        } else if (TMs == "v") {
+          TMs1 = "V"
+        } else {
+          TMs1 ="+"
+        }
+        // decimalna točka
+        var TT = TS / 10;
+        if (TMs1 == "V") {
+          HT = TMb / -10
+        } else if (TMs1 == "L") {
+          HT = TMb / -10
+        } else {
+          HT = TMb /10
+        }
+        var TTB = Tb / 10; // temperatura na barometru
+        var BBB = b / 10; // očitanje barometra
+        //konstante
+        //pozitivna temperatura
+        p1 = 6.10780;
+        p2 = 17.08085;
+        p3 = 234.175;
+        //negativna temperatura - voda
+        pv1 = 6.10780;
+        pv2 = 17.84362;
+        pv3 = 245.425;
+        //negativna temperatura - led
+        pl1 = 6.10714;
+        pl2 = 22.44294;
+        pl3 = 272.440;
+        //psihrometrijska konstanta
+        pp1 = 0.000660 * (1 + 0.00115 * HT );
+        pp2 = 0.000582;
+
+        //koje konstante koristiti
+        if (TMs1 == "V") {
+          c = pp1
+          c1 = pv1
+          c2 = pv2
+          c3 = pv3
+        } else if (TMs1 == "L") {
+          c = pp2
+          c1 = pl1
+          c2 = pl2
+          c3 = pl3
+        } else {
+          c = pp1
+          c1 = p1
+          c2 = p2
+          c3 = p3
+        }
+
+        //druge konstante
+      
+        e = 2.718282;
+        if (bi1 == 1) {
+          kortl = 1.333224
+        } else if (bi1 == 2) {
+          kortl = 1
+        } else {
+          kortl = 1.333224
+        }
+        var cb1 = 0.000163;
+        if (bi2 == 1) {
+          cb2 = 0.0
+        } else if (bi2 == 2) {
+          cb2 = 33.09
+        } else if (bi2 == 3) {
+          cb2 = 45.33
+        } else if (bi2 == 4) {
+          cb2 = 15.30
+        } else {
+          cb2 = 49.46
+        }
+
+        // tlak
+
+        var ALFA = pk * 0.01;
+        var KOS = Math.cos(2.0 * GS * 3.141593/180.0);
+        var GF0 = 9.80616 * (1.-(0.0026373 * KOS)) + (0.0000059 * (Math.pow(KOS,2)));
+        var GFHB = GF0 - 0.000003086 * hb + 0.000001118 * ALFA * (hb - hsr)- 0.00000688 * (1-ALFA) * (db - dbs);
+        var P0 = BBB * kortl
+        var P0_1 = P0 - (cb1 * (P0 + cb2) * TTB);
+        var P0_final = P0_1 + P0 * (GFHB/9.80665 - 1.0);
+        var P0_final1 = (P0_final).toFixed(1);
+        var P0_final2 = P0_final1 * 10;
+        if (P0_final1 < 1000) {
+          P0P0P0P0 = String(P0_final1 * 10);
+        } else {
+          P0P0 = ((P0_final1 - 1000) * 10).toFixed(0);
+          P0P0P0P0 = String('0000' + P0P0).slice(-4);
+        }
+        document.getElementById("P0P0P0P0").innerHTML = P0P0P0P0; // tlak 0°C
+
+        var T_SMR = TT + (0.5 * hb / 100);
+        var T_S = (TT + T_SMR) / 2;
+        var hg = hb * 9.81;
+        var RT = 286.9 * (T_S + 273.15);
+        var hgRT = hg / RT;
+        var k = Math.pow(e, hgRT) - 1;
+        var dP = P0_final * k;
+        var P_hPa = P0_final + dP;
+        var P_hPaf = P_hPa.toFixed(1)
+        if (P_hPa < 1000) {
+          PPPP = (P_hPa * 10).toFixed(0);
+        } else {
+          PP = ((P_hPa - 1000) * 10).toFixed(0);
+          PPPP = String('0000' + PP).slice(-4);
+        }
+        document.getElementById("PPPP").innerHTML = PPPP; // tlak SMR
+
+        //vlaga
+      
+        if (utd == "1") {
+          mi1 = c2 * HT / (c3 + HT); 
+          mi2 = c2 * TT / (c3 + TT);
+          SVPHT = c1 * Math.pow(e, mi1); //tlak zasićene vodene pare za mokru temperaturu
+          SVPTT = c1 * Math.pow(e, mi2); //tlak zasićene vodene pare za suhu temperaturu
+          VPp = SVPHT - c * P0_final * (TT - HT); //stvarni tlak vodene pare (e)
+          VP = VPp.toFixed(1);
+          VPD = VP * 10;
+          //temperatura rosišta prije mora proći provjeru je li negativna ili pozitivna i onda se određuje temperatura rosišta
+          TDp = p3 * Math.log(VPp / p1) / (p2 - Math.log(VPp / p1));
+          TDn = pv3 * Math.log(VPp / pv1) / (pv2 - Math.log(VPp / pv1));
+          if (TDp >= 0.0) {
+            TDr = TDp
+          } else {
+            TDr = TDn
+          }
+          TD = TDr.toFixed(1); //temperatura rosište (td)
+          TDD = TD * 10;
+          mi3 = c2 * TDr / (c3 + TDr);
+          SVPTD = c1 * Math.pow(e, mi3);
+          UU = 100 * SVPTD / SVPTT;
+          U = UU.toFixed(0); //vlaga zraka (U)
+          document.getElementById("tdd").innerHTML = TDD;
+          document.getElementById("vpd").innerHTML = VPD;
+          document.getElementById("uuu").innerHTML = U;
+          if (U < 0 || U > 100) {
+            alert ("Nemoguća vlaga zraka! Provjerite unos mokre i suhe temperature zraka!")
+          } else {
+            return {
+              P0_final2,
+              P0P0P0P0,
+              PPPP,
+              TDD
+            };
+          }
+        } else if (utd == "2") { 
+          UUU = String('000' + TM).slice(-3);
+          return {
+            UUU,
+            P0_final2,
+            P0P0P0P0,
+            PPPP,
+          };
+        }
+      }
+
+      //provjera kod upisa vlage
+
+      function vlagaprov () {
+        var vlag = document.getElementById("mokratemp").value;
+        if (utd == "2"){
+          if (vlag < 0 || vlag > 100) {
+            alert ("Neispravno upisana vlaga zraka!")
+          }
+        }
+      }
+
+      //promjena tlaka
+
+      function tlakprom () {
+        var proms = document.getElementById("tlakp").value;
+        var promsx = parseInt(proms);
+        let vtprom = vlagatlak ();
+        let tlakpred = vtprom.P0_final2;
+        if (proms < 7000) {
+          prom1 = promsx + 10000;
+        } else {
+          prom1 = promsx;
+        }
+        if (tlakpred < 7000) {
+          tlakpred1 = tlakpred + 10000;
+        } else {
+          tlakpred1 = tlakpred;
+        }
+        tlakpr = Math.abs(prom1 - tlakpred1);
+        tlakpr1 = String('000' + tlakpr).slice(-3);
+        if (proms == '') {
+          tlakpr2 = "///"
+        } else {
+          tlakpr2 = tlakpr1
+        }
+        document.getElementById("prom").innerHTML = tlakpr2;
+        return tlakpr2;
+      }
+
+      function approvjera () {
+        var approv = document.getElementById("appp").value;
+        if (approv == ''){
+          alert("Upisati šifru tendencije tlaka zraka!");
+        } else if (approv < 0 || approv > 8) {
+          alert ("Nispravna šifra tendencije tlaka! Mora biti u rasponu 0-8!")
+        }
+      }
+
+      // oborina 
+
+      function oborina () {
+        var R = document.getElementById("R").value;
+        var R3 = document.getElementById("RRR3").value;
+        if (R == '') {
+          if (hour_utc_displ == "00" || hour_utc_displ == "06" || hour_utc_displ == "12" || hour_utc_displ == "18") {
+            Rs = 000;
+            RsX = '';
+          } else {
+            Rs = '';
+          }
+        } else if (R < 10) {
+          Rs = "99" + R;
+          RsX = Rs;
+        } else {
+          Rs = (R / 10).toFixed(0)
+          RsX = Rs;
+        }
+        Rs1 = String('000' + Rs).slice(-3);
+        if (R3 == '') {
+          Rs3 = '';
+        } else if (R3 < 10) {
+          Rs3 = "99" + R3;
+        } else {
+          Rs3 = (R3 / 10).toFixed(0)
+        }
+        Rs13 = String('000' + Rs3).slice(-3);
+        if (hour_utc_displ == "06" || hour_utc_displ == "18") {
+          tR = 2;
+        } else if (hour_utc_displ == "00" || hour_utc_displ == "12") {
+          tR = 1;
+        } else {
+          tR = 0;
+        }
+        if (Rs !== '' && Rs3 !== '') {
+          iR = 0;
+        } else if (Rs !== '' && Rs3 == '') {
+          iR = 1;
+        } else if (Rs == '' && Rs3 !== '') {
+          iR = 2;
+        } else if (Rs == '' && Rs3 == '') {
+          iR = 4;
+        }
+        return {
+          Rs1,
+          Rs13,
+          iR,
+          tR
+        };
+      }
+
+      // provjera novi snijeg
+
+      function snijegnew_test (){
+        var snijegnew25 = document.getElementById("ssnov").value; // novi snijeg
+        snijeg25 = parseInt(snijegnew25);
+        if (snijeg25 > 99){
+          alert("Visina novog snijega mora biti manja od 100 cm!")
+        } else {
+          ssnov_bla = snijegnew25;
+        }
+      }
+
+      //provjera smijera udara vjetra 
+
+      function udar_vj_provjera () {
+        var vj_prov = document.getElementById("ddxx").value;
+        var vj_prov1 = document.getElementById("ffxx").value;
+        if (vj_prov < 0 || vj_prov > 36) {
+          alert ("Smijer vjetra se kreće od 00 do 36!")
+        } else if (vj_prov1 !== '' && vj_prov == ''){
+          alert ("Nedostaje podatak o smijeru udara vjetra!")
+        } else if (vj_prov1 == '' && vj_prov !== ''){
+          alert ("Nedostaje podatak o brzini udara vjetra!")
+        }
+      }
+
+      // pojave padajući meni
+
+      function pojavemenu () {
+        wwww = document.getElementById("wwW1W2").value;
+        var wwpad = document.getElementById("pojave_ww").value;
+        var w1pad = document.getElementById("pojave_w1").value;
+        var w2pad = document.getElementById("pojave_w2").value;
+        if (wwpad !== '' && w1pad !== '' && w2pad !== '') {
+          if (w1pad < w2pad) {
+            popa = wwpad + w2pad + w1pad;
+          } else  {
+            popa = wwpad + w1pad + w2pad;
+          }
+        } else {
+          popa = "////";
+        }
+        popaj = "7" + popa;
+        if (wwww == '') {
+          if (popa == "////") {
+            document.getElementById("poj1").setAttribute("style", "display:block");
+            document.getElementById("poj2").setAttribute("style", "display:none");
+          } else {
+            document.getElementById("poj1").setAttribute("style", "display:none");
+            document.getElementById("poj2").setAttribute("style", "display:block");
+          }
+        } else {
+          document.getElementById("poj1").setAttribute("style", "display:block");
+          document.getElementById("poj2").setAttribute("style", "display:none");
+        }
+        document.getElementById("pojpad").innerHTML = popaj;
+        return popaj;
+      }
+
+      // izračun synop izvještaja
+
+      function synop () {
+        var TSsyn = document.getElementById("suhatemp").value; // temperatura zraka
+        var ap = document.getElementById("appp").value; // tendencija tlaka
+        var poj = document.getElementById("wwW1W2").value; // pojave
+        var chs = document.getElementById("ch").value; // visoki oblaci
+        var cms = document.getElementById("cm").value; // srednji oblaci
+        var cls = document.getElementById("cl").value; // niski oblaci
+        var nnms = document.getElementById("nnm").value; // srednja naoblaka
+        var nnls = document.getElementById("nnl").value; // niska naoblaka
+        var tws = document.getElementById("tw").value; // temperatura vode
+        var txs = document.getElementById("tx").value; // maksimalna temperatura
+        var tns = document.getElementById("tn").value; // minimalna temperatura
+        var ess = document.getElementById("es").value; // stanje tla
+        var ems = document.getElementById("em").value; // stanje tla sa snijegom
+        var tn5s = document.getElementById("tn5").value; // minimalna temperatura na 4 cm iznad tla
+        var r24s = document.getElementById("R24").value; // oborina 24 sata
+        var r24s1 = String('0000' + r24s).slice(-4);
+        var snijegnov = document.getElementById("sssss").value; // količina snijega
+        var snijegnew = document.getElementById("ssnov").value; // novi snijeg
+        var spsp = document.getElementById("spspspsp").value; // posebne grupe
+        var tR3 = document.getElementById("tR3").value; // trajanje oborine (3. odjeljak)
+        var nschshs1 = document.getElementById("nschshs1").value; // oblaci po slojevima
+        var nschshs2 = document.getElementById("nschshs2").value;
+        var nschshs3 = document.getElementById("nschshs3").value;
+        var nschshs4 = document.getElementById("nschshs4").value;
+        var mores1 = document.getElementById("morestanje1").value; // stanje mora u bazenu
+        var mores2 = document.getElementById("morestanje2").value; // stanje mora na otvorenom
+        var vss = document.getElementById("vs").value; // vidljivost prema moru sa postaje
+        var ss24 = document.getElementById("ss24").value; // insolacija 24 sata
+        var ss1 = document.getElementById("ss1").value; // insolacija 1 sat
+        var vid = vidljivost ();
+        var NN8x = naoblaka ();
+        var hob = najniziobl ();
+        var ddxds = vjetarsmjer ();
+        var ffxfs = vjetarbrzina ();
+        var poja = pojavemenu ();
+        let vt = vlagatlak ();
+        let UU2 = vt.UUU;
+        let PP = vt.PPPP;
+        P0P01 = vt.P0P0P0P0;
+        TD1 = vt.TDD;
+        if (TD1 < 0) {
+          sntd = 1;
+          TD2 = TD1 * -1;
+        } else {
+          sntd = 0
+          TD2 = TD1;
+        }
+        TD3 = String('000' + TD2).slice(-3);
+        if (TSsyn < 0) {
+          sntt = 1;
+          TSsyn1 = TSsyn * -1;
+        } else {
+          sntt = 0;
+          TSsyn1 = TSsyn;
+        }
+        TSsyn2 = String('000' + TSsyn1).slice(-3);
+
+        if (utd == "1") {
+          grupa2 = " 2" + sntd + TD3;
+        } else if (utd == "2") {
+          grupa2 = " 29" + UU2;
+        }
+
+        tpr = tlakprom ();
+
+        if (poj == ''){
+          if (poja == "7////" || poja == "700//" || poja == "701//" || poja == "702//" || poja == "703//" || poja == "70000" || poja == "70001" || poja == "70002" || poja == "70010" || poja == "70011" || poja == "70012" || poja == "70020" || poja == "70021" || poja == "70022" || poja == "70100" || poja == "70101" || poja == "70102" || poja == "70110" || poja == "70111" || poja == "70112" || poja == "70120" || poja == "70121" || poja == "70122" || poja == "70200" || poja == "70201" || poja == "70202" || poja == "70210" || poja == "70211" || poja == "70212" || poja == "70220" || poja == "70221" || poja == "70222" || poja == "70300" || poja == "70301" || poja == "70302" || poja == "70310" || poja == "70311" || poja == "70312" || poja == "70320" || poja == "70321" || poja == "70322") {
+            IX = 2;
+            grupa7 = '';
+          } else {
+            IX = 1
+            grupa7 = " " + poja;
+          }
+        } else {
+          if (poj == "00//" || poj == "01//" || poj == "02//" || poj == "03//" ||poj == "0000" || poj == "0001" || poj == "0002" || poj == "0010" || poj == "0011" || poj == "0012" || poj == "0020" || poj == "0021" || poj == "0022" || poj == "0100" || poj == "0101" || poj == "0102" || poj == "0110" || poj == "0111" || poj == "0112" || poj == "0120" || poj == "0121" || poj == "0122" || poj == "0200" || poj == "0201" || poj == "0202" || poj == "0210" || poj == "0211" || poj == "0212" || poj == "0220" || poj == "0221" || poj == "0222" || poj == "0300" || poj == "0301" || poj == "0302" || poj == "0310" || poj == "0311" || poj == "0312" || poj == "0320" || poj == "0321" || poj == "0322") {
+            IX = 2;
+            grupa7 = '';
+          } else {
+            IX = 1;
+            grupa7 = " 7" + poj;
+          }
+        }
+
+        if (nnls == "0") {
+          nnlsx10 = nnms;
+        } else {
+          nnlsx10 = nnls;
+        }
+        nnlsx = (nnlsx10 / 10 * 8).toFixed(0);
+        if (NN8x == "0" || (chs == "/" && cms == "/" && cls == "/")) {
+          grupa8 = '';
+        } else {
+          grupa8 = " 8" + nnlsx + cls + cms + chs;
+        }
+        let obor = oborina ();
+        let iRs = String(obor.iR);
+        Rs1s = obor.Rs1;
+        Rs1s3 = obor.Rs13;
+        tRs = obor.tR;
+        if (iRs == "2" || iRs == "4" ) {
+          grupa6 = ''
+        } else {
+          grupa6 = " 6" + Rs1s + tRs;
+        }
+        if (iRs == "1" || iRs == "4" ) {
+          grupa36 = '';
+        } else {
+          grupa36 = " 6" + Rs1s3 + tR3;
+        }
+          if (tws < 0) {
+            snw = 1;
+            tws1 = tws * -1;
+          } else {
+            snw = 0;
+            tws1 = tws;
+          }
+          tws2 = String('000' + tws1).slice(-3);
+          if (tmox == "2" || tws == '') {
+            document.getElementById("div").setAttribute("style", "display:none");
+          } else {
+            document.getElementById("div").setAttribute("style", "display:block");
+          }
+
+        //grupa 9 - vrijeme izvještaja
+
+        var gg = document.getElementById("GGgg").value
+        if (gg == ''){
+          grupa9 = '';
+        } else {
+          grupa9 = " 9" + gg;
+        }
+
+        // maksimalna temperatura
+
+        if (txs < 0) {
+          sntx = 1;
+          txs1 = txs * -1;
+        } else {
+          sntx = 0;
+          txs1 = txs;
+        }
+        txs2 = String('000' + txs1).slice(-3);
+        if (txs == '') {
+          grupa31 = ''
+        } else {
+          grupa31 = " 1" + sntx + txs2;
+        }
+
+        // minimalna temperatura
+
+        if (tns < 0) {
+          sntn = 1;
+          tns1 = tns * -1;
+        } else {
+          sntn = 0;
+          tns1 = tns;
+        }
+        tns2 = String('000' + tns1).slice(-3);
+        if (tns == '') {
+          grupa32 = ''
+        } else {
+          grupa32 = " 2" + sntn + tns2;
+        }
+
+        // minimalna temperatura na 5 cm iznad tla
+
+        if (tn5s < 0) {
+          tn5s1 = tn5s / -10;
+        } else {
+          tn5s1 = tn5s / 10;
+        }
+        tn5s2 = (tn5s1).toFixed(0);
+        if (tn5s == '') {
+          tn5s3 = "//";
+        } else {
+          tn5s3 = String('00' + tn5s2).slice(-2);
+        }
+        if (tn5s == ''){
+          sntn5 = "/"
+        } else if (tn5s < 0){
+          sntn5 = 1;
+        } else {
+          sntn5 = 0;
+        }
+        if (ess == '') {
+          ess1 = "/"
+        } else {
+          ess1 = String(ess);
+        }
+        if (hour_utc_displ == "06") {
+          grupa33 = " 3" + ess1 + sntn5 + tn5s3;
+        } else {
+          grupa33 = '';
+        }
+
+        // snijeg
+
+        var ems = document.getElementById("em").value;
+
+        if (ems == '') {
+          ems1 = "/";
+        } else {
+          ems1 = ems;
+        }
+
+        snijegnov1 = String('000' + snijegnov).slice(-3);
+
+        if (hour_utc_displ == "06" || hour_utc_displ == "18") {
+          if (ems1 == "0") {
+            grupa34 = " 4" + ems1 + "///";
+          } else if (ems1 == '/') {
+            grupa34 = '';
+          } else if (ems1 == "1" || ems1 == "5") {
+            grupa34 = " 4" + ems1 + "998"
+          } else if (snijegnov1 < 0.5) {
+            grupa34 = " 4" + ems1 + "997"
+          } else {
+            grupa34 = " 4" + ems1 + snijegnov1;
+          }
+        } else {
+          grupa34 = '';
+        }
+
+        //novi snijeg
+
+        snijegnew1 = String('00' + snijegnew).slice(-2);
+
+        if (hour_utc_displ == "06" || hour_utc_displ == "18") {
+          if (ems1 == "/" || ems1 == "0" || ems1 == "1" || ems1 == "5"){
+            grupa931 = ''
+          } else {
+            if (snijegnew == '') {
+              grupa931 = ''
+            } else if (snijegnew < 0.1) {
+              grupa931 = " 93197"
+            } else if (snijegnew == "0.1") {
+              grupa931 = " 93191"
+            } else if (snijegnew == "0.2") {
+              grupa931 = " 93192"
+            } else if (snijegnew == "0.3") {
+              grupa931 = " 93193"
+            } else if (snijegnew == "0.4") {
+              grupa931 = " 93194"
+            } else if (snijegnew == "0.5") {
+              grupa931 = " 93195"
+            } else if (snijegnew == "0.6") {
+              grupa931 = " 93196"
+            } else if (snijegnew > 400) {
+              grupa931 = " 93198"
+            } else {
+              grupa931 = " 931" + snijegnew1
+            }
+          } 
+        } else {
+          grupa931 = ''
+        }
+
+        // insolacija 24 sata
+
+        ss24x = String('000' + ss24).slice(-3);
+        if (ss24 == '') {
+          grupa55SSS = '';
+        } else {
+          grupa55SSS = " 55" + ss24x;
+        }
+
+        // insolacija 1 sat
+
+        ss1x = String('00' + ss1).slice(-2);
+        if (ss1 == '') {
+          grupa553SS = '';
+        } else {
+          grupa553SS = " 553" + ss1x;
+        }
+
+        // oborina 24 sata
+
+        if (r24s == '' && hour_utc_displ == "06") {
+          grupa37 = " 70000";
+        } else if (r24s == '' && hour_utc_displ == "12"){
+          grupa37 = " 70000";
+        } else if (r24s == '') {
+          grupa37 = '';
+        } else if (r24s == "0") {
+          grupa37 = " 79999";
+        } else if (r24s > 9998) {
+          grupa37 = " 79998";
+        } else {
+          grupa37 = " 7" + r24s1;
+        }
+
+        // udar vjetra
+
+        var ddxxs = document.getElementById("ddxx").value;
+        var ffxxs = document.getElementById("ffxx").value;
+        if (ffxxs < 17 ) {
+          grupa911 = ''
+          grupa915 = ''
+        } else {
+          ddxxy = String('00' + ddxxs).slice(-2);
+          ffxxy = String('00' + ffxxs).slice(-2);
+          grupa911 = " 911" + ffxxy;
+          grupa915 = " 915" + ddxxy;
+        }
+
+        // slojevi oblaka
+
+        if (nschshs1 == '') {
+          ncss1 = '';
+        } else {
+          ncss1 = " 8" + nschshs1;
+        }
+
+        if (nschshs2 == '') {
+          ncss2 = '';
+        } else {
+          ncss2 = " 8" + nschshs2;
+        }
+
+        if (nschshs3 == '') {
+          ncss3 = '';
+        } else {
+          ncss3 = " 8" + nschshs3;
+        }
+
+        if (nschshs4 == '') {
+          ncss4 = '';
+        } else {
+          ncss4 = " 8" + nschshs4;
+        }
+
+        // stanje mora
+
+        if (vss == '') {
+          vssx = "/"
+        } else if (vss < 0.05) {
+          vssx = 0
+        } else if (vss >= 0.05 && vss < 0.2) {
+          vssx = 1
+        } else if (vss >= 0.2 && vss < 0.5) {
+          vssx = 2
+        } else if (vss >= 0.5 && vss < 1) {
+          vssx = 3
+        } else if (vss >= 1 && vss < 2) {
+          vssx = 4
+        } else if (vss >= 2 && vss < 4) {
+          vssx = 5
+        } else if (vss >= 4 && vss < 10) {
+          vssx = 6
+        } else if (vss >= 10 && vss < 20) {
+          vssx = 7
+        } else if (vss >= 20 && vss < 50) {
+          vssx = 8
+        } else {
+          vssx = 9
+        }
+
+        if (vssx == "/" && mores1 == "/" && mores2 == "/") {
+          grupa923 = ''
+          grupa924 = ''
+        } else {
+          grupa923 = " 923" + mores1 + mores2
+          grupa924 = " 924" + mores2 + vssx
+        }
+
+        // oblaci ispod razine postaje
+
+        var nchhctx = document.getElementById("nchhct").value;
+
+        // odjeljci
+
+        var odjeljak1 = iRs + IX + hobl + vid + " " + NN8x + ddxds + ffxfs + " 1" + sntt + TSsyn2 + grupa2 + " 3" + P0P01 + " 4" + PP + " 5" + ap + tpr + grupa6 + grupa7 + grupa8 + grupa9;
+        var odjeljak2 = "222//" + " 0" + snw + tws2;
+        if (grupa31== '' && grupa32 == '' && grupa33 == '' && grupa34 == '' && grupa55SSS == '' && grupa553SS == '' && grupa36 == '' && grupa37 == '' && ncss1 == '' && ncss2 == '' && ncss3 == '' && ncss4 == '' && grupa911 == '' && grupa915 == '' && grupa923 == '' && grupa924 == '' && grupa931 == '' && spsp == '') {
+          odjeljak3 = '';
+        } else {
+          odjeljak3 = "333" + grupa31 + grupa32 + grupa33 + grupa34 + grupa55SSS + grupa553SS + grupa36 + grupa37 + ncss1 + ncss2 + ncss3 + ncss4 + grupa911 + grupa915 + grupa923 + grupa924 + grupa931 + " " + spsp;
+        }
+        if (odjeljak3 == '') {
+          document.getElementById("divix").setAttribute("style", "display:none");
+        } else {
+          document.getElementById("divix").setAttribute("style", "display:inline");
+        }
+        if (nchhctx !== '') {
+          odjeljak4 = "444" + " " + nchhctx
+        } else {
+          odjeljak4 = ''
+        }
+        if (odjeljak4 == '') {
+          document.getElementById("divix4").setAttribute("style", "display:none");
+        } else {
+          document.getElementById("divix4").setAttribute("style", "display:inline");
+        }
+
+        // završni ispis
+
+        document.getElementById("odjeljak1").innerHTML = odjeljak1;
+        document.getElementById("odjeljak2").innerHTML = odjeljak2;
+        document.getElementById("odjeljak3").innerHTML = odjeljak3;
+        document.getElementById("odjeljak4").innerHTML = odjeljak4;
+      }
+    </script>
+  </head>
+  <body onload="load ()">
+    <table>
+      <tr>
+        <td colspan="18" class="vrh"><b><p id="timedate"></p></b></td>
+      </tr>
+      <tr>
+        <td colspan="18" class="vrh"><b>TERMINSKE VRIJEDNOST</b></td>
+      </tr>
+      <tr class="centar">
+        <td class="unos"><abbr title="Vidljivost u kilometrima.">km</abbr></td>
+        <td class="izracun">VV</td>
+        <td class="unos"><abbr title="Ukupna naoblaka.">NN</abbr></td>
+        <td class="unos"><abbr title="Količina visokih oblaka.">NN<sub>H</sub></abbr></td>
+        <td class="unos"><abbr title="Šifra visokih oblaka [0-9 ili /].">C<sub>H</sub></abbr></td>
+        <td class="unos"><abbr title="Količina srednjih oblaka.">NN<sub>M</sub></abbr></td>
+        <td class="unos"><abbr title="Šifra srednjih oblaka [0-9 ili /].">C<sub>M</sub></abbr></td>
+        <td class="unos"><abbr title="Visina srednjih oblaka u kilometrima.">km<sub>M</sub></abbr></td>
+        <td class="izracun">h<sub>M</sub></td>
+        <td class="unos"><abbr title="Količina niskih oblaka.">NN<sub>L</sub></abbr></td>
+        <td class="unos"><abbr title="Šifra niskih oblaka [0-9 ili /].">C<sub>L</sub></abbr></td>
+        <td class="unos"><abbr title="Visina niskih oblaka u kilometrima.">km<sub>L</sub></abbr></td>
+        <td class="izracun">h<sub>L</sub></td>
+        <td class="unos"><abbr title="Izmjereni smjer vjetra [00-36].">dd</abbr></td>
+        <td class="unos"><abbr title="Izmjerena brzina vjetra.">ff</abbr></td>
+        <td class="sporedno"><abbr title="Opažani smjer vjetra [00-32]. (Nije potrebno unositi ako se zna dd.)">DD</abbr></td>
+        <td class="sporedno"><abbr title="Jačina vjetra u Bf. (Nije potrebno unositi ako se zna ff.)">FF</abbr></td>
+        <td id="more"><div id="more3"><abbr title="Temperatura mora.">T<sub>w</sub></abbr></div></td>
+      </tr>
+      <tr class="centar">
+        <td class="unos"><input class="unosbr" type="text" size="5" id="km" onblur="vidljivost ()"></td>
+        <td class="izracun"><p id="VVizr"></p></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="nn" onblur="naoblaka ()"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="nnh"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="ch" onblur="visokiobl ()"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="nnm" onblur="srednjiosmine ()"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="cm" onblur="srednjiobl ()"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="kmm" onblur="srednjioblvis ()"></td>
+        <td class="izracun"><p id="hmizr"></p></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="nnl" onblur="niskiosmine ()"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="cl" onblur="niskiobl ()"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="kml" onblur="niskioblvis ()"></td>
+        <td class="izracun"><p id="hlizr"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="dd" onblur="vjetarmerprov ()"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="ff" onblur="vjetarbrzprov ()"></td>
+        <td class="sporedno"><input class="sporednobr" type="text" size="5" id="DD" onblur="vjetarsmjer ();vjetaropprov ();"></td>
+        <td class="sporedno"><input class="sporednobr" type="text" size="5" id="FF" onblur="vjetarbrzina ();vjetarjacprov ();"></td>
+        <td id="more2"><div id="more4"><input class="unosbr" type="text" size="5" id="tw"></div></td>
+      </tr>
+      <tr class="centar">
+        <td class="unos"><abbr title="Stanje tla [0-9].">E</abbr></td>
+        <td class="unos"><abbr title="Stanje tla sa snježnim pokrivačem [0-9].">E'</abbr></td>
+        <td class="izracun">E<sub>x</sub></td>
+        <td class="unos"><abbr title="Temperatura zraka.">T</abbr></td>
+        <td class="unos"><abbr title="Temperatura zraka po mokrom termometru (T') ili relativna vlaga zraka (U). (Ako je mokra temperatura negativna ne upisivati predznak, već upisati V ili L za vodu ili led na krpici.)"><p id = "utdxx"></p></abbr></td>
+        <td class="izracun" id="tddx1"><div id="tdddiv">T<sub>d</sub></div></td>
+        <td class="izracun" id="vpdx1"><div id="vpddiv">e</div></td>
+        <td class="izracun" id="uuux1"><div id="uuudiv">U</div></td>
+        <td class="unos"><abbr title="Temperatura na barometru.">T<sub>b</abbr></sub></td>
+        <td class="unos"><abbr title="Očitanje barometra u navedenim jedinicama.">b <sub>(<p style="display:inline" id="mjed"></p>)</sub></abbr></td>
+        <td class="izracun">P<sub>0</sub></td>
+        <td class="izracun"><p id="bxxx"></p></td>
+        <td class="unos"><abbr title="Tlak na razni postaje prije 3 sata [hPa]. Ako postaja u to vrijeme nije radila ili iz bilo kojeg drugog razloga nema podatka o tlaku, ostaviti ovo polje prazno.">P<sub>0 (-3h)</sub></abbr></td>
+        <td colspan="2" class="unos"><abbr title="Tendencija tlaka zraka na razini postaje tijekom prethodnih 3 sata [0-8]."><b>5appp</b></abbr></td>
+        <td colspan="2" class="unos"><abbr title="UTC 00, 06, 12, 18 - W1W2 za prethodnih 6 sati; UTC 03, 09, 15, 21 - W1W2 za prethodna 3 sata; svaki ostali termin - W1W2 za predhodni sat"><b>7wwW<sub>1</sub>W<sub>2</sub></b></abbr></td>
+        <td class="unos"><abbr title="UTC vrijeme izvještaja (ako nije vrijeme punog sata)."><b>9GGgg</b></abbr></td>
+      </tr>
+      <tr class="centar">
+        <td class="unos"><input class="unosbr" type="text" size="5" id="es" onblur="tlo ()"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="em" onblur="tlo ()"></td>
+        <td class="izracun"><p id="ex"></p></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="suhatemp"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="mokratemp" onblur="vlagaprov ()"></td>
+        <td class="izracun" id="tddx"><p id="tdd"></p></td>
+        <td class="izracun" id="vpdx"><p id="vpd"></p></td>
+        <td class="izracun" id="uuux"><p id="uuu"></p></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="barotemp"></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="baroočitanje" onblur="vlagatlak ()"></td>
+        <td class="izracun"><p id="P0P0P0P0"></p></td>
+        <td class="izracun"><p id="PPPP"></p></td>
+        <td class="unos"><input class="unosbr" type="text" size="5" id="tlakp" onblur="tlakprom ()"></td>
+        <td colspan="2" class="unos"><b>5</b><input class="unosbr" type="text" size="1" id="appp" onclick="tlakprom ()" onblur="approvjera ()"><b><p id="prom" style="display:inline">ppp</p></b></td>
+        <td colspan="2"class="unos"><div id="poj1"><b>7</b><input class="unosbr" type="text" size="5" id="wwW1W2"></div><div id="poj2"><b><p id="pojpad"></p></b></div></td>
+        <td class="unos"><b>9</b><input class="unosbr" size="3" id="GGgg">
+      </tr>
+      <tr>
+        <td colspan="9" class="vrh"><b>SPECIJALNE VRIJEDNOSTI</b></td>
+        <td colspan="9" class="vrh"><b>DNEVNE VRIJEDNOSTI</b></td>
+      </tr>
+      <tr>
+        <td colspan="9">
+          <p id="suncedan" class="input"><abbr title="Insolacija 24 sata [0.1h]">SS<sub>24h</sub></abbr> = <input class="unosbr" type="text" size="5" id="ss24"> | </p><p style="display:inline"><abbr title="Insolacija tijekom 1 sat [0.1h]">SS<sub>1h</sub></abbr> = <input class="unosbr" type="text" size="5" id="ss1"></p>
+          <hr>
+          <abbr title="Unosi se kada treba razmjeniti podatke oborine u vremenskim razdobljima od tri sata ili drugim razdobljima, koja se traže za regionalnu razmjenu.">RRR</abbr> = <input class="unosbr" type="text" size="5" id="RRR3"> <select name="vrijeme" id="tR3" class="dropdown">
+            <option value="/">Vremensko razdoblje</option>
+            <option value="5">1 sat</option>
+            <option value="6">2 sata</option>
+            <option value="7">3 sata</option>
+            <option value="1">6 sati</option>
+            <option value="8">9 sata</option>
+            <option value="2">12 sati</option>
+            <option value="9">15 sata</option>
+            <option value="3">18 sati</option>
+            <option value="4">24 sata</option>
+            <option value="0">Drugo razdoblje</option>
+          </select><hr>
+          <abbr title="Oblačni slojevi | Ns - ključ 2700 | C - ključ 0500 | hshs - ključ 1677"><b>8N<sub>s</sub>Ch<sub>s</sub>h<sub>s</sub></b></abbr> | <b>8</b><input class="unosbrleft" type="text" size="4" id="nschshs1"> <b>8</b><input class="unosbrleft" type="text" size="4" id="nschshs2"> <b>8</b><input class="unosbrleft" type="text" size="4" id="nschshs3"> <b>8</b><input class="unosbrleft" type="text" size="4" id="nschshs4">
+          <hr>
+          UDAR VJETRA (ff<sub>x</sub> &ge; 17 m/s): <abbr title="Maksimalni udar vjetra za razdoblje W1W2 (jednak ili veći 17 m/s). Upisuju se cijeli m/s.">ff<sub>x</sub></abbr> = <input class="unosbr" type="text" size="5" id="ffxx"> <abbr title="Smijer za maksimalni udar vjetra jednak ili veći 17 m/s - za razdoblje W1W2.">dd<sub>x</sub></abbr> = <input class="unosbr" type="text" size="5" id="ddxx" onblur="udar_vj_provjera ()">
+          <hr>
+          <div id="more5">STANJE MORA<br>
+          <select name="more_bazen" id="morestanje1" class="dropdown">
+            <option value="/">U bazenu</option>
+            <option value="0">0 - Zrcalno (0m)</option>
+            <option value="1">1 - Naborano (0m-0.1m)</option>
+            <option value="2">2 - Valićasto (0.1m-0.5m)</option>
+            <option value="3">3 - Valovito (0.5m-1.25m)</option>
+            <option value="4">4 - Uzburkano (1.25m-2.5m)</option>
+            <option value="5">5 - Grubo (2.5m-4m)</option>
+            <option value="6">6 - Olujno(4m-6m)</option>
+            <option value="7">7 - Velo (6m-9m)</option>
+            <option value="8">8 - Teško (9m-14m)</option>
+            <option value="9">9 - Iznimno teško (>14m)</option>
+          </select>
+          <select name="more_otvoreno" id="morestanje2" class="dropdown">
+            <option value="/">Na otvorenom</option>
+            <option value="0">0 - Zrcalno (0m)</option>
+            <option value="1">1 - Naborano (0m-0.1m)</option>
+            <option value="2">2 - Valićasto (0.1m-0.5m)</option>
+            <option value="3">3 - Valovito (0.5m-1.25m)</option>
+            <option value="4">4 - Uzburkano (1.25m-2.5m)</option>
+            <option value="5">5 - Grubo (2.5m-4m)</option>
+            <option value="6">6 - Olujno(4m-6m)</option>
+            <option value="7">7 - Velo (6m-9m)</option>
+            <option value="8">8 - Teško (9m-14m)</option>
+            <option value="9">9 - Iznimno teško (>14m)</option>
+          </select>
+          <abbr title="Vidljivost prema moru s obalne postaje [km] | ključ 4300"><b>V<sub>s</sub></b></abbr> = <input class="unosbr" type="text" size="5" id="vs">
+          <hr></div>
+          <abbr title="Ostale specijalne grupe. Unosi se potreban broj puta u grupama po 5 znamenki, a grupe se međusobno razdvajaju razmakom."><b>S<sub>p</sub>S<sub>p</sub>S<sub>p</sub>S<sub>p</sub>S<sub>p</sub></b></abbr> | <input class="unosbrleft" type="text" size="40" id="spspspsp"><hr>
+          <abbr title="Oblaci ispod razine postaje (grupe se upisuju ručno) | N' - ključ 2700 | C' - ključ 0500 | H'H' - stotine metara | Ct - ključ 0552"><b>N'C'H'H'C<sub>t</sub></b></abbr> | <input class="unosbrleft" type="text" size="20" id="nchhct">
+        </td>
+        <td colspan ="9">
+          <div id="max"><abbr title="Maksimalna temperatura zraka (06 UTC - 18 UTC).">T<sub>X</sub></abbr> = <input class="unosbr" type="text" size="5" id="tx"><hr></div>
+          <div id="min"><abbr title="Minimalna temperatura zraka (18 UTC - 06 UTC).">T<sub>N</sub></abbr> = <input class="unosbr" type="text" size="5" id="tn"> <abbr title="Minimalna temperatura na 5cm iznad tla.">T<sub>n5</sub></abbr> = <input class="unosbr" type="text" size="5" id="tn5"><hr></div>
+          <div id="oborina"><abbr title="Količina oborine za navedeno razdoblje.">R<sub><p id="Re" style="display:inline"></sub></p></abbr> = <input class="unosbr" type="text" size="5" id="R"></p><hr></div>
+          <div id="r24"><abbr title="Količina oborine tijekom prethodnih 24 sata.">R<sub>24</sub></abbr> = <input class="unosbr" type="text" size="5" id="R24"><hr></div>
+          <div id="sss">SNIJEG: <abbr title="Visina snijega.">UKUPNI</abbr> = <input class="unosbr" type="text" size="5" id="sssss"> <abbr title="Visina novonapadalog snijega u navedenom razdoblju.">NOVI<sub><p id="ReSw" style="display:inline"></sub></p></abbr> = <input class="unosbr" type="text" size="5" id="ssnov" onblur="snijegnew_test ()"><hr></div>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="18">
+          <select name="pojave" id="pojave_ww" class="dropdown" onchange="pojavemenu ()">
+            <option value="//">* * Trenutno vrijeme * *</option>
+            <option value="//">* * 00 - 09* *</option>
+            <option value="00">00 - Razvoj oblaka nije opažan ili se nije mogao opažati</option>
+            <option value="01">01 - Oblaci se općenito rasplinjuju ili postaju slabije razvijeni</option>
+            <option value="02">02 - Stanje neba u cjelini je nepromjenjeno</option>
+            <option value="03">03 - Oblaci se općenito stvaraju ili razvijaju</option>
+            <option value="04">04 - Vidljivost smanjena dimom</option>
+            <option value="05">05 - Suha mutnoća</option>
+            <option value="06">06 - Raširena prašina lebdi u zraku - ne dignuta vjetrom</option>
+            <option value="07">07 - Prašina ili pijesak bez vrtloga ili oluje</option>
+            <option value="08">08 - Prašinski ili pješčani vrtlog (vrtlozi)</option>
+            <option value="09">09 - Prašinska ili pješčana oluja</option>
+            <option value="//">* * 10 - 19 * *</option>
+            <option value="10">10 - Sumaglica</option>
+            <option value="11">11 - Niska ili ledena magla na postaji (krpe)</option>
+            <option value="12">12 - Niska ili ledena magla na postaji (sloj)</option>
+            <option value="13">13 - Sijevanje</option>
+            <option value="14">14 - Virga</option>
+            <option value="15">15 - Oborina u vidokrugu van kruga od 5 km</option>
+            <option value="16">16 - Oborina u vidokrugu u krugu od 5 km (ne na postaji)</option>
+            <option value="17">17 - Grmljavina (nema oborine u vidokrugu)</option>
+            <option value="18">18 - Oluja u vidokrugu postaje</option>
+            <option value="19">19 - Tornado ili pijavica u vidokrugu postaje</option>
+            <option value="//">* * 20 - 29 * *</option>
+            <option value="20">20 - Rosulja (ne smrzava se) ili zrnat snijeg tijekom prethodnog sata</option>
+            <option value="21">21 - Kiša (ne smrzava se) koja ne pada kao pljuskovi tijekom prethodnog sata</option>
+            <option value="22">22 - Snijeg tijekom prethodnog sata</option>
+            <option value="23">23 - Susnježica tijekom prethodnog sata</option>
+            <option value="24">24 - Prehladna rosulja ili prehladna kiša tijekom prethodnog sata</option>
+            <option value="25">25 - Pljusak kiše tijekom prethodnog sata</option>
+            <option value="26">26 - Pljusak snijega ili susnježice tijekom prethodnog sata</option>
+            <option value="27">27 - Pljusak tuče ili pljusak kiše i tuče tijekom prethodnog sata</option>
+            <option value="28">28 - Magla ili ledena magla tijekom prethodnog sata</option>
+            <option value="29">29 - Grmljavina (sa ili bez oborine) tijekom prethodnog sata</option>
+            <option value="//">* * 30 - 39 * *</option>
+            <option value="30">30 - Slaba ili umjerena prašinska ili pješčana oluja - oslabila</option>
+            <option value="31">31 - Slaba ili umjerena prašinska ili pješčana oluja - bez promjene</option>
+            <option value="32">32 - Slaba ili umjerena prašinska ili pješčana oluja - započela ili jača</option>
+            <option value="33">33 - Žestoka prašinska ili pješčana oluja - oslabila</option>
+            <option value="34">34 - Žestoka prašinska ili pješčana oluja - bez promjene</option>
+            <option value="35">35 - Žestoka prašinska ili pješčana oluja - započela ili jača</option>
+            <option value="36">36 - Slaba ili umjerena vijavica - niska</option>
+            <option value="37">37 - Jaka vijavica - niska</option>
+            <option value="38">38 - Slaba ili umjerena vijavica - visoka</option>
+            <option value="39">39 - Jaka vijavica - visoka</option>
+            <option value="//">* * 40 - 49 * *</option>
+            <option value="40">40 - Magla ili ledena magla u daljini u vrijeme opažanja - ali ne na postaji tijekom prethodnog sata</option>
+            <option value="41">41 - Magla ili ledena magla u krpama</option>
+            <option value="42">42 - Magla ili ledena magla, nebo vidljivo - slabi</option>
+            <option value="43">43 - Magla ili ledena magla, nebo nevidljivo - slabi</option>
+            <option value="44">44 - Magla ili ledena magla, nebo vidljivo - bez promjene</option>
+            <option value="45">45 - Magla ili ledena magla, nebo nevidljivo - bez promjene</option>
+            <option value="46">46 - Magla ili ledena magla, nebo vidljivo - započela ili jača</option>
+            <option value="47">47 - Magla ili ledena magla, nebo nevidljivo - započela ili jača</option>
+            <option value="48">48 - Magla, stvara inje, nebo vidljivo</option>
+            <option value="49">49 - Magla, stvara inje, nebo nevidljivo</option>
+            <option value="//">* * 50 - 59 * *</option>
+            <option value="50">50 - Rosulja s prekidima - ne smrzava se - slaba</option>
+            <option value="51">51 - Rosulja neprekidna - ne smrzava se - slaba</option>
+            <option value="52">52 - Rosulja s prekidima - ne smrzava se - umjerena</option>
+            <option value="53">53 - Rosulja neprekidna - ne smrzava se - ujerena</option>
+            <option value="54">54 - Rosulja s prekidima - ne smrzava se - jaka</option>
+            <option value="55">55 - Rosulja neprekidna - ne smrzava se - jaka</option>
+            <option value="56">56 - Rosulja - smrzava se - slaba</option>
+            <option value="57">57 - Rosulja - smrzava se - umjerena ili jaka</option>
+            <option value="58">58 - Rosulja i kiša - slaba</option>
+            <option value="59">59 - Rosulja i kiša - umjerena ili jaka</option>
+            <option value="//">* * 60 - 69 * *</option>
+            <option value="60">60 - Kiša s prekidima - ne smrzava se - slaba</option>
+            <option value="61">61 - Kiša neprekidna - ne smrzava se - slaba</option>
+            <option value="62">62 - Kiša s prekidima - ne smrzava se - umjerena</option>
+            <option value="63">63 - Kiša neprekidna - ne smrzava se - umjerena</option>
+            <option value="64">64 - Kiša s prekidima - ne smrzava se - jaka</option>
+            <option value="65">65 - Kiša neprekidna - ne smrzava se - jaka</option>
+            <option value="66">66 - Kiša - smrzava se - slaba</option>
+            <option value="67">67 - Kiša - smrzava se - umjerena ili jaka</option>
+            <option value="68">68 - Kiša ili rosulja i snijega - slaba</option>
+            <option value="69">69 - Kiša ili rosulja i snijega - umjerena ili jaka</option>
+            <option value="//">* * 70 - 79 * *</option>
+            <option value="70">70 - Snijeg s prekidima - slab</option>
+            <option value="71">71 - Snijeg bez prekida - slab</option>
+            <option value="72">72 - Snijeg s prekidima - umjeren</option>
+            <option value="73">73 - Snijeg bez prekida - umjeren</option>
+            <option value="74">74 - Snijeg s prekidima - jak</option>
+            <option value="75">75 - Snijeg bez prekida - jak</option>
+            <option value="76">76 - Ledene iglice (sa ili bez magle)</option>
+            <option value="77">77 - Zrnat snijeg (sa ili bez magle)</option>
+            <option value="78">78 - Pojedinačni snježni kristali poput zvjezdica (sa ili bez magle)</option>
+            <option value="79">79 - Ledena zrna ili solika</option>
+            <option value="//">* * 80 - 89 * *</option>
+            <option value="80">80 - Pljusak kiše - slab</option>
+            <option value="81">81 - Pljusak kiše - umjeren ili jak</option>
+            <option value="82">82 - Pljusak kiše - silan</option>
+            <option value="83">83 - Pljusak susnježice - slab</option>
+            <option value="84">84 - Pljusak susnježice - umjeren ili jak</option>
+            <option value="85">85 - Pljusak snijega - slab</option>
+            <option value="86">86 - Pljusak snijega - ujeren ili jak</option>
+            <option value="87">87 - Pljusak ledenih zrna ili solike sa ili bez kiše ili susnježice - slab</option>
+            <option value="88">88 - Pljusak ledenih zrna ili solike sa ili bez kiše ili susnježice - umjeren ili jak</option>
+            <option value="89">89 - Pljusak tuče, sa ili bez kiše ili susnježice, bez grmljavine - slab</option>
+            <option value="//">* * 90 - 99 * *</option>
+            <option value="90">90 - Pljusak tuče, sa ili bez kiše ili susnježice, bez grmljavine - umjeren ili jak</option>
+            <option value="91">91 - Slaba kiša u vrijeme opažanja - grmljavina tijekom prethodnog sata</option>
+            <option value="92">92 - Umjerena ili jaka kiša u vrijeme opažanja - grmljavina tijekom prethodnog sata</option>
+            <option value="93">93 - Slabi snijeg, susnježica ili tuča u vrijeme opažanja - grmljavina tijekom prethodnog sata</option>
+            <option value="94">94 - Umjereni ili jaki snijeg, susnježica ili tuča u vrijeme opažanja - grmljavina tijekom prethodnog sata</option>
+            <option value="95">95 - Grmljavina - slaba ili umjerena - bez tuče</option>
+            <option value="96">96 - Grmljavina - slaba ili umjerena - s tučom</option>
+            <option value="97">97 - Grmljavina - jaka - bez tuče, ali s kišom i/ili snijegom u vrijeme opažanja</option>
+            <option value="98">98 - Grmljavina kombinirana s prašinskom ili pješćanom olujom u vrijeme opažanja</option>
+            <option value="99">99 - Grmljavina - jaka - s tučom u vrijeme opažanja</option>
+          </select>
+          <select name="pojavew1" id="pojave_w1" class="dropdown" onchange="pojavemenu ()">
+            <option value="/">* * W1 * *</option>
+            <option value="0">0 - N &leq; 5</option>
+            <option value="1">1 - DIO N < 5 i DIO N > 5</5></option>
+            <option value="2">2 - N > 5</option>
+            <option value="3">3 - Pješčana ili prašinska oluja ili visoka vijavica</option>
+            <option value="4">4 - Magla ili ledena magla ili gusta suha mutnoća</option>
+            <option value="5">5 - Rosulja</option>
+            <option value="6">6 - Kiša</option>
+            <option value="7">7 - Snijeg ili susnježica</option>
+            <option value="8">8 - Pljusak (pljuskovi)</option>
+            <option value="9">9 - Grmljavina</option>
+          </select>
+          <select name="pojavew2" id="pojave_w2" class="dropdown" onchange="pojavemenu ()">
+            <option value="/">* * W2 * *</option>
+            <option value="0">0 - N &leq; 5</option>
+            <option value="1">1 - DIO N < 5 i DIO N > 5</option>
+            <option value="2">2 - N > 5</option>
+            <option value="3">3 - Pješčana ili prašinska oluja ili visoka vijavica</option>
+            <option value="4">4 - Magla ili ledena magla ili gusta suha mutnoća</option>
+            <option value="5">5 - Rosulja</option>
+            <option value="6">6 - Kiša</option>
+            <option value="7">7 - Snijeg ili susnježica</option>
+            <option value="8">8 - Pljusak (pljuskovi)</option>
+            <option value="9">9 - Grmljavina</option>
+          </select>
+        </td>
+      </tr>
+      <tr>
+        <td class="centar" colspan="2"><button class="gumb" onclick="synop ()">Ispiši synop</button></td>
+        <td colspan="16"><div id="div0"><b><p class="crveno" id="odjeljak0" style="display:inline"></p></b></div><b><p class="synop" id="odjeljak1" style="display:inline"></p><br><div id="div"><p class="synop" id="odjeljak2" style="display:inline"></p></br></div><div id="divix"><p class="synop" id="odjeljak3" style="display:inline"></p></b><br></div><div id="divix4"><b><p class="synop" id="odjeljak4" style="display:inline"></p></b></div></td>
+      </tr>
+    </table>
+    <p id="dno" style="display:inline">Verzija: 2.8.0</p><br>
+    <p><b>NAPOMENA:</b> Prije prvog korištenja ovog programa, obavezno otvoriti datoteku u programu za uređivanje teksta te pročitati upute za korištenje.</p>
+  </body>
+  <!--POVIJEST VERZIJA:
+    2.8.0 - Dodani padajući meni-i za pomoć pri štifriranju grupe za pojave.
+
+    2.7.5 - Ispravak koda za provjeru visine niskih i srednjih oblaka.
+
+    2.7.4 - Ispravak kontrole unosa vjetra.
+    
+    2.7.3 - Ispravak manjih bugova.
+
+    2.7.2 - Manja podešavanja rada aplikacije.
+
+    2.7.1 - Ispravljeno izvještavanje 7. grupe u slučaju ww = 00-03 i W1,2 = 0-2.
+    
+    2.7.0 - Dodano šifriranje grupa za insolaciju u 3. odjeljku.
+
+    2.6.2 - Program izbacuje upozorenje ako mjereni ili opažani smjer vjetra nije ispravno upisan.
+
+    2.6.1 - Upozorenje na krivo upisan podatak o vlazi zraka ako se izvještava vlaga zraka umjesto mokre temperature.
+    
+    2.6.0 - Mogućnost da se upisuje vlaga zraka umjesto mokre temperature. (Potrebno namjestiti u postavkama.)
+    Ispravljeno šifriranje 8. grupe u slučaju kad se ne vide oblaci.
+
+    2.5.0 - Dodatak za odjeljak 4.
+    Manje prilagodbe u kodu.
+    Program pokazuje u kojem se terminu treba predati SYNOP izvještaj (za postaje DHMZ-a).
+
+    2.4.0 - Dodano šifriranje specijalnih grupa za stanje mora (potrebno u postavkama namjestiti primorsku postaju).
+
+    2.3.1 - Manje vizualne promjene.
+
+    2.3.0 - Šifriranje oborine u 3. odjeljku.
+    Šifriranje oblačnih slojeva.
+
+    2.2.0 - Dodano šifriranje Ex (nije bitno za synop, ali može biti korisno pri ručnom šifriranju HRKLIMA izvještaja).
+    Dodana grupa 9GGgg.
+    Dodana mogućnost šifriranja maksimalnog udara vjetra većeg ili jednakog 17 m/s za razdoblje W1W2.
+    Manje vizualne promjene.
+    Manje promjene u kodu programa.
+
+    2.1.2 - Ispravljena greška zbog koje je program 00 UTC pokazivao kao 0 UTC.
+    Novi snijeg će biti šifriran samo ako snijeg pokriva više od polovine tla.
+    Program prikazuje u kojim jedinicama se upisuje očitanje barometra.
+
+    2.1.1 - Program od sad izbacuje upozorenje ako je za visinu novog snijega upisano više od 99 cm.
+    Manje vizualne promjene.
+
+    2.1.0 - Program od sada šifrira i novi snijeg.
+    Manje vizualne promjene u svrhu integriranja opcije za upis novog snijega.
+    Od sada pomoć pri upisu u određena polja se može dobiti tako da se tapne na naziv polja.
+    Mogućnost promjene broja bloka prilikom editiranja u editoru teksta.
+
+    2.0.3 - Ispravljeno računanje 3. grupe u 3. odjeljku.
+    Program sada izbacuje ispravnu vrijednost grupe u slučaju da nije poznata minimalna temperatura na 5 cm iznad tla.
+
+    2.0.2 - Ispravljeno računanje 4. grupe u 3. odjeljku.
+    U slučaju da je stanje tla pod snijegom 1 ili 5, program od sada tu grupu ispisuje kao "41998" ili "45998", odnosno izvještava snijeg u krpama.
+    U slučaju visine snijega manje od 0.5 cm, program će grupu šrifrirati kao "997".
+
+    2.0.1 - Ispravljen kod za računanje 7. grupe u 3. odjeljku.
+    U slučaju oborine u tragovima grupa program sada ispisuje grupu "79999", a u slučaju oborine 999,8 mm ili veće, program ispisuje "79998".
+
+    2.0.0 - Promjenjen vizualni izgled aplikacije.
+    Promjene u kodu aplikacije.
+    Aplikacija ne prikazuje polje za unos temperature mora ako postaja nije primorska postaja. U slučaju da se radi o primorskoj postaji, polje je vidljivo u svakom terminu, ali ako podatak nije unesen, u synop izvještaju je izostavljena grupa za temperaturu mora te cijeli drugi odjeljak.
+    Polja za unos maksimalne temperature, minimalne temperature, minimalne temperature na 5 cm iznad tla te visine snijega i oborine su prikazani samo u terminima kada se ti podaci izvještavaju u synop izvještaju.
+    Aplikacija izbacuje upozorenja ako nisu uneseni bitni podaci ili su podaci uneseni pogrešno.
+
+    1.0.0 - Aplikacija računa stvarni tlak vodene pare, temperaturu rosišta i relativnu vlagu zraka te svodi tlak na 0°C i na SMR. 
+    Također, aplikacija izračunava synop kodove te šifrira synop prvi odjeljak synop izvještaja, temperaturu mora u drugom odjeljku te 1., 2., 3. ,4. i 7. grupu trećeg odjeljka i u izvještaj uključuje i specijalne grupe koje motritelj sam unosi.
+    Vizualni izgled aplikacije nije vezan za izgled dnevnika.-->
+</html>
