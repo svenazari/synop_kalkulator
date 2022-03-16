@@ -1,5 +1,5 @@
 # synop_kalkulator
-UPUTE ZA KORIŠTENJE:
+    UPUTE ZA KORIŠTENJE:
     Prije prvog korištenja treba prilagoditi varijable u dijelu "varijable koje se prilagođavaju postaji".
     Većinu varijabli treba prepisati iz ditalnog dnevnika motrenja (Pomoć -> Podaci o postaji), a one koje se ne nalaze u digitalnom dnevniku motritelj upisuje vezano uz tip uređaja i mjerne jedinice koje se koriste u radu.
     Nakon što se unesu sve potrebne varijable, ovu datoteku treba spremiti pod imenom "synop_kalkulator_2.7.4.html" (bez navodnika).
