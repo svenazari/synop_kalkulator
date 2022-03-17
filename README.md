@@ -69,5 +69,5 @@
     Polja za unos maksimalne temperature, minimalne temperature, minimalne temperature na 5 cm iznad tla te visine snijega i oborine su prikazani samo u terminima kada se ti podaci izvještavaju u synop izvještaju.
     Aplikacija izbacuje upozorenja ako nisu uneseni bitni podaci ili su podaci uneseni pogrešno.
     1.0.0 - Aplikacija računa stvarni tlak vodene pare, temperaturu rosišta i relativnu vlagu zraka te svodi tlak na 0°C i na SMR. 
-    Također, aplikacija izračunava synop kodove te šifrira synop prvi odjeljak synop izvještaja, temperaturu mora u drugom odjeljku te 1., 2., 3. ,4. i 7. grupu        trećeg odjeljka i u izvještaj uključuje i specijalne grupe koje motritelj sam unosi.
+    Također, aplikacija izračunava synop kodove te šifrira synop prvi odjeljak synop izvještaja, temperaturu mora u drugom odjeljku te 1., 2., 3. ,4. i 7. grupu trećeg odjeljka i u izvještaj uključuje i specijalne grupe koje motritelj sam unosi.
     Vizualni izgled aplikacije nije vezan za izgled dnevnika.
